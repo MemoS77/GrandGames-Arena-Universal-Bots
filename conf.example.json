@@ -11,11 +11,6 @@
       "engineKind": "uci",
       "command": "ffish",
       "initCommands": ["setoption name UCI_Variant value fischerandom"]
-    },
-    "tricechess": {
-      "engineKind": "uci",
-      "command": "ffish",
-      "initCommands": ["setoption name UCI_Variant value gothic"]
     }
   }
 }
