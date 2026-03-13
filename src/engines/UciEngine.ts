@@ -1,5 +1,6 @@
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { IEngine } from './IEngine'
+import dLog from '../funcs/cLog'
 
 const PING_DELAY = 1000
 const FIXED_MOVE_TIME_DEC = 5000
@@ -16,6 +17,7 @@ export default class UciEngine implements IEngine {
   start(engineCommand: string, initCommands?: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
       const child = spawn(engineCommand)
+      dLog(`Spawned engine: ${engineCommand}`)
 
       child.on('spawn', () => {
         this.onUciOk = () => {
@@ -58,6 +60,7 @@ export default class UciEngine implements IEngine {
 
       child.stdout.on('data', (data) => {
         const output = data.toString().replace(/\s+/g, ' ').trim()
+        dLog(`Received: ${output}`)
         this.buffer += output
         if (this.bufferTimeout) clearTimeout(this.bufferTimeout)
         this.bufferTimeout = setTimeout(() => {
@@ -140,6 +143,7 @@ export default class UciEngine implements IEngine {
 
   private send(message: string): void {
     if (this.child) {
+      dLog(`Sending: ${message}`)
       this.child.stdin.write(message + '\n')
       // this.child.stdin.end(); // Uncomment if you want to close stdin after sending
     }

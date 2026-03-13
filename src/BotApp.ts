@@ -13,7 +13,9 @@ import { IEngine } from './engines/IEngine'
 import UciEngine from './engines/UciEngine'
 import { GamesIds, GamesNames, TableState } from './types/enums'
 import GomocupEngine from './engines/GomocupEngine'
-import { IBotSDK } from './sdk/IBotSDK.js'
+import { IBotSDK, PositionInfo } from './sdk/IBotSDK.js'
+import dLog from './funcs/dLog'
+import { ChessPos } from './types/types'
 
 type EngineInfo = {
   engine: IEngine
@@ -69,11 +71,11 @@ export default class BotApp {
 
       const doConnect = () => {
         const games = this.getSupportedGames()
-        console.log(`Try connect to ${WS_SERVER}`, games)
+        dLog(`Try connect`)
         this.sdk
           .connect(JWT_TOKEN, { games })
           .then((r) => {
-            console.info('Connected! User data: ', r)
+            dLog('Connected! User data: ', r)
             this.connected = true
             this.uid = r.uid
             this.login = r.login
@@ -90,7 +92,8 @@ export default class BotApp {
   }
 
   public async listenPos(): Promise<void> {
-    this.sdk.onPosition(async (data: any) => {
+    this.sdk.onPosition(async (data: PositionInfo<ChessPos>) => {
+      dLog('Pos: ', data)
       const id: number = +data.tableId
       let ei = this.engines.get(id)
 
@@ -112,7 +115,7 @@ export default class BotApp {
           this.engines.set(id, ei)
         }
 
-        if (!ei.nowThinkMove && data.activePlayerIndex === data.botIndex) {
+        if (!ei.nowThinkMove && data.needMove) {
           ei.nowThinkMove = data.moveNumber
 
           let successMove = false
@@ -124,10 +127,10 @@ export default class BotApp {
               const timeDec = new Date().getTime() - initTime
               const move = await ei.engine.getBestMove(
                 data.position,
-                data.botIndex,
-                data.fixedMoveTime,
-                data.playersTime[0] - (data.botIndex !== 0 ? 0 : timeDec),
-                data.playersTime[1] - (data.botIndex !== 1 ? 0 : timeDec),
+                data.botIndex!,
+                data.fixedMoveTime ? 1 : 0,
+                data.players[0]!.time - (data.botIndex !== 0 ? 0 : timeDec),
+                data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
               )
 
               if (this.connected) {
@@ -153,6 +156,7 @@ export default class BotApp {
   }
 
   private async prepareEngine(gameId: number): Promise<IEngine> {
+    dLog(`Prepare engine for game ${gameId}`)
     const gameName = GamesNames[gameId]
     if (!gameName) throw new Error(`Unknown game ${gameId}`)
     const conf = gamesConf[gameName]

@@ -1,6 +1,10 @@
+import dotenv from 'dotenv'
 import { readFileSync } from 'fs'
 import { exit } from 'process'
 import { AppConf } from './types/types'
+import cLog from './funcs/cLog'
+
+dotenv.config()
 
 // Чтение аргумента командной строки --config=path/to/config.json
 const args = process.argv
@@ -15,7 +19,7 @@ let conf: AppConf
 try {
   const configContent = readFileSync(configPath, 'utf-8')
   conf = JSON.parse(configContent) as AppConf
-  console.log(`Config ${configPath} loaded`)
+  cLog(`Config ${configPath} loaded`)
 } catch (error) {
   console.error(
     `Failed to read config "${configPath}". You can set it with --conf=path/to/config.json`,
