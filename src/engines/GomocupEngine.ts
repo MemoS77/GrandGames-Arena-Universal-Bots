@@ -1,6 +1,6 @@
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { IEngine } from './IEngine'
-import { ChessPos } from '../types/types'
+import { BotTableInfo, ChessPos } from '../types/types'
 
 import cLog from '../funcs/cLog'
 
@@ -241,6 +241,7 @@ export default class GomocupEngine implements IEngine {
   }
 
   async getBestMove(
+    tableInfo: BotTableInfo,
     pos: ChessPos,
     player: number,
     fixedTime: number,

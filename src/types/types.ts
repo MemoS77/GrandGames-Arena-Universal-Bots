@@ -13,3 +13,9 @@ export type AppConf = {
 }
 
 export type ChessPos = { fen: string; lastMove: string | null }
+
+export type BotTableInfo = {
+  id?: number
+  enemyLogin?: string
+  enemyRating?: number
+}
