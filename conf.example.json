@@ -1,0 +1,16 @@
+{
+  "token": "your_bot_jwt_here_from_arena",
+  "reconnectTimeout": 15000,
+  "games": {
+    "chess": {
+      "engineKind": "uci",
+      "command": "./soft/stockfish17",
+      "initCommands": []
+    },
+    "chess960": {
+      "engineKind": "uci",
+      "command": "ffish",
+      "initCommands": ["setoption name UCI_Variant value fischerandom"]
+    }
+  }
+}
