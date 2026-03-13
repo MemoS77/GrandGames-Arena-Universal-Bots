@@ -1,6 +1,7 @@
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { IEngine } from './IEngine'
 import dLog from '../funcs/cLog'
+import { BotTableInfo } from '../types/types'
 
 const PING_DELAY = 1000
 const FIXED_MOVE_TIME_DEC = 5000
@@ -13,11 +14,29 @@ export default class UciEngine implements IEngine {
   private onUciOk: (() => void) | null = null
   private buffer: string = ''
   private bufferTimeout: NodeJS.Timeout | null = null
+  private engineName: string | null = null
+  private engineAuthor: string | null = null
+  private greatingsSended: Set<number> = new Set()
+  private sendMessage: ((tableId: number, message: string) => void) | null =
+    null
 
-  start(engineCommand: string, initCommands?: string[]): Promise<void> {
+  start(
+    engineCommand: string,
+    initCommands?: string[],
+    sendMessage?: (tableId: number, message: string) => void,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const child = spawn(engineCommand)
+      this.sendMessage = sendMessage || null
       dLog(`Spawned engine: ${engineCommand}`)
+
+      // Clear greatings cache
+      setInterval(
+        () => {
+          this.greatingsSended.clear()
+        },
+        1000 * 60 * 60 * 12,
+      )
 
       child.on('spawn', () => {
         this.onUciOk = () => {
@@ -42,6 +61,18 @@ export default class UciEngine implements IEngine {
         if (output.length === 0) return
 
         if (this.onUciOk) {
+          const nameMatch = output.match(/id name (.+?)(?= id |$)/)
+          if (nameMatch) {
+            this.engineName = nameMatch[1].trim()
+            dLog(`Engine name: ${this.engineName}`)
+          }
+
+          const authorMatch = output.match(/id author (.+?)(?= id | option |$)/)
+          if (authorMatch) {
+            this.engineAuthor = authorMatch[1].trim()
+            dLog(`Engine author: ${this.engineAuthor}`)
+          }
+
           if (output.indexOf('uciok') !== -1) {
             this.onUciOk()
           }
@@ -60,7 +91,7 @@ export default class UciEngine implements IEngine {
 
       child.stdout.on('data', (data) => {
         const output = data.toString().replace(/\s+/g, ' ').trim()
-        dLog(`Received: ${output}`)
+        //dLog(`Received: ${output}`)
         this.buffer += output
         if (this.bufferTimeout) clearTimeout(this.bufferTimeout)
         this.bufferTimeout = setTimeout(() => {
@@ -101,6 +132,7 @@ export default class UciEngine implements IEngine {
   }
 
   async getBestMove(
+    tableInfo: BotTableInfo,
     pos: { fen: string; lastmove: string | null },
     player: number,
     fixedTime: number,
@@ -108,6 +140,22 @@ export default class UciEngine implements IEngine {
     blackTime: number,
   ): Promise<string> {
     if (this.child) {
+      if (
+        this.sendMessage &&
+        tableInfo.id &&
+        !this.greatingsSended.has(tableInfo.id)
+      ) {
+        this.sendMessage(
+          tableInfo.id,
+          `Hi, ${tableInfo.enemyLogin ? `${tableInfo.enemyLogin}` : 'there'}! ${
+            this.engineName
+              ? "I'm bot with engine: " + this.engineName + '. '
+              : ''
+          }`,
+        )
+        this.greatingsSended.add(tableInfo.id)
+      }
+
       this.send(`position fen ${pos.fen}`)
 
       if (fixedTime) {

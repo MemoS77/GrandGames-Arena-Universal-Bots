@@ -126,6 +126,12 @@ export default class BotApp {
               successMove = false
               const timeDec = new Date().getTime() - initTime
               const move = await ei.engine.getBestMove(
+                {
+                  id: id,
+                  enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
+                  enemyRating:
+                    data.players[data.botIndex === 0 ? 1 : 0]!.rating,
+                },
                 data.position,
                 data.botIndex!,
                 data.fixedMoveTime ? 1 : 0,
@@ -164,14 +170,19 @@ export default class BotApp {
 
     let engine: IEngine
     const command = conf.command
+
+    const messageFn = (tableId: number, message: string) => {
+      this.sdk.message(tableId, message)
+    }
+
     switch (conf.engineKind) {
       case 'uci':
         engine = new UciEngine()
-        await engine.start(command, conf.initCommands)
+        await engine.start(command, conf.initCommands, messageFn)
         return engine
       case 'gomocup':
         engine = new GomocupEngine()
-        await engine.start(command, conf.initCommands)
+        await engine.start(command, conf.initCommands, messageFn)
         return engine
       default:
         throw new Error(`Enginekind ${conf.engineKind} not supported`)
