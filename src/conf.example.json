@@ -1,0 +1,10 @@
+{
+  "token": "your_bot_jwt_here_from_arena.grandgames.net",
+  "games": {
+    "chess": {
+      "engineKind": "uci",
+      "command": "./soft/stockfish17",
+      "initCommands": []
+    }
+  }
+}

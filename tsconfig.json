@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", // Таргетируем современные версии JS
+    "module": "ESNext", // Используем модули ES
+    "rootDir": "./src", // Исходные файлы
+    "outDir": "./dist", // Директория выхода
+    "strict": true, // Включаем строгий режим
+    "esModuleInterop": true, // Совместимость с CommonJS модулями
+    "moduleResolution": "node", // Разрешение модулей для Node.js
+    "skipLibCheck": true, // Пропуск проверки типов в библиотеках
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
