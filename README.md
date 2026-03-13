@@ -2,5 +2,5 @@
 
 ## Documentation
 
-- 🇷🇺 [Русская версия](README_RU.md)
-- 🇬🇧 [English version](README_EN.md)
+- 🇷🇺 [Русская версия](readme_ru.md)
+- 🇬🇧 [English version](readme_en.md)
