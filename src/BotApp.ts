@@ -5,10 +5,9 @@ import {
   MAX_SEARCH_MOVE_RESTART,
   MAX_TABLE_LIVE_TIME,
   RECONNECT_TIMEOUT,
-  WS_SERVER,
 } from './conf'
 // @ts-ignore
-import BotSDK from './sdk/arena-bot-node-sdk.js'
+import BotSDK from './sdk/arena-bot-sdk'
 import { IEngine } from './engines/IEngine'
 import UciEngine from './engines/UciEngine'
 import { GamesIds, GamesNames, TableState } from './types/enums'
