@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "start": "node dist/bundle.js --conf=./conf/conf.stockfish.json",
-    "dev": "tsx watch src/index.ts --conf=./conf/conf.stockfish.json",
+    "start": "node dist/bundle.js --conf=./conf/conf.houdini.json",
+    "dev": "tsx watch src/index.ts --conf=./conf/conf.komodo.json",
     "dev:gomoku": "tsx watch src/index.ts --conf=./conf/conf.gomoku.pela.json",
     "start:stockfish": "node dist/bundle.js --conf=./conf/conf.stockfish.json"
   },
