@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rollup -c",
     "start": "node dist/bundle.js --conf=./conf/conf.houdini.json",
-    "dev": "tsx watch src/index.ts --conf=./conf/conf.komodo.json",
+    "dev": "tsx watch src/index.ts --conf=./conf/conf.houdini.json",
     "dev:gomoku": "tsx watch src/index.ts --conf=./conf/conf.gomoku.pela.json",
     "start:stockfish": "node dist/bundle.js --conf=./conf/conf.stockfish.json"
   },
@@ -26,6 +26,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "dotenv": "^17.3.1"
+    "dotenv": "^17.3.1",
+    "gga-bots": "^0.3.7"
   }
 }

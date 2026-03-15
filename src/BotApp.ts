@@ -6,15 +6,15 @@ import {
   MAX_TABLE_LIVE_TIME,
   RECONNECT_TIMEOUT,
 } from './conf'
-// @ts-ignore
-import BotSDK from './sdk/arena-bot-sdk'
+
 import { IEngine } from './engines/IEngine'
 import UciEngine from './engines/UciEngine'
 import { GamesIds, GamesNames, TableState } from './types/enums'
 import GomocupEngine from './engines/GomocupEngine'
-import { IBotSDK, PositionInfo } from './sdk/IBotSDK.js'
+
 import dLog from './funcs/dLog'
 import { ChessPos } from './types/types'
+import { BotSDK, GameId, PositionInfo } from 'gga-bots'
 
 type EngineInfo = {
   engine: IEngine
@@ -23,13 +23,13 @@ type EngineInfo = {
 }
 
 export default class BotApp {
-  private sdk: IBotSDK = new BotSDK()
+  private sdk = new BotSDK()
   private uid: number = 0
   private login: string = ''
   private connected: boolean = false
   private engines: Map<number, EngineInfo> = new Map()
 
-  private getSupportedGames(): number[] {
+  private getSupportedGames(): GameId[] {
     return Object.keys(gamesConf).map((key) => GamesIds[key])
   }
 
@@ -72,7 +72,7 @@ export default class BotApp {
         const games = this.getSupportedGames()
         dLog(`Try connect`)
         this.sdk
-          .connect(JWT_TOKEN, { games })
+          .connect(JWT_TOKEN, games)
           .then((r) => {
             dLog('Connected! User data: ', r)
             this.connected = true
