@@ -1,4 +1,8 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
+import {
+  spawn,
+  ChildProcessWithoutNullStreams,
+  SpawnOptions,
+} from 'child_process'
 import { IEngine } from './IEngine'
 import dLog from '../funcs/cLog'
 
@@ -31,6 +35,10 @@ export abstract class BaseSpawnEngine implements IEngine {
 
   protected abstract clearEngineState(): void
 
+  protected getSpawnOptions(): SpawnOptions | undefined {
+    return undefined
+  }
+
   start(
     engineCommand: string,
     initCommands?: string[],
@@ -38,7 +46,15 @@ export abstract class BaseSpawnEngine implements IEngine {
     onProcessDeath?: () => void,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      const child = spawn(engineCommand)
+      const commandParts = engineCommand.split(' ')
+      const spawnOptions = this.getSpawnOptions() || {}
+
+      const child = spawn(
+        commandParts[0],
+        commandParts.slice(1),
+        spawnOptions,
+      ) as ChildProcessWithoutNullStreams
+
       this.onProcessDeath = onProcessDeath || null
       dLog(`Spawned engine: ${engineCommand}`)
 
@@ -85,7 +101,7 @@ export abstract class BaseSpawnEngine implements IEngine {
     dLog('kill called')
     if (this.child) {
       dLog('kill: child exists')
-      
+
       if (this.onBestMoveReject) {
         this.onBestMoveReject(new Error('Engine killed'))
         this.onBestMoveReject = null

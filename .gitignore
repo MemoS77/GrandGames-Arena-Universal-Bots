@@ -1,6 +1,8 @@
 dist
 node_modules
 .env
-soft
+windows
+ubuntu
 /conf
 conf.json
+bots_files/*

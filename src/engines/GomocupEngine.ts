@@ -227,7 +227,7 @@ export default class GomocupEngine extends BaseSpawnEngine {
     if (this.child) {
       this.parsePos(pos, player)
 
-      // Программы из gomocup не поддерживают вариант опен-рендзю. Приходится использоват ькостыль для третьего хода.
+      // Программы из gomocup не поддерживают вариант опен-рендзю. Приходится использовать костыль для третьего хода.
       if (this.pos.moveNumber === 3) {
         const moves = fixedMoves.sort(() => Math.random() - 0.5)
         const move = this.pos.moves.has(moves[0] + ',1') ? moves[1] : moves[0]

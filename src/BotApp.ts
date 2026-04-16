@@ -47,7 +47,6 @@ export default class BotApp {
     this.sdk.onDisconnect((code) => {
       this.connected = false
       console.log('Disconnected', code)
-
       setTimeout(() => {
         this.connect()
       }, RECONNECT_TIMEOUT)
