@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  bot1:
+    build: .
+    container_name: arena-bot-1
+    restart: unless-stopped
+    environment:
+      - DEBUG=true
+    volumes:
+      - ./conf/docker/Bot1.json:/app/conf.json:ro
+      - ./ubuntu:/app/ubuntu
+    networks:
+      - bot-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  bot2:
+    build: .
+    container_name: arena-bot-2
+    restart: unless-stopped
+    environment:
+      - DEBUG=true
+    volumes:
+      - ./conf/docker/Bot2.json:/app/conf.json:ro
+      - ./ubuntu:/app/ubuntu
+    networks:
+      - bot-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  bot-network:
+    driver: bridge

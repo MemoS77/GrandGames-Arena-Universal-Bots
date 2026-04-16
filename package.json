@@ -7,7 +7,9 @@
   "scripts": {
     "build": "rollup -c",
     "start": "node dist/bundle.js --conf=./conf/conf.houdini.json",
-    "dev": "tsx watch src/index.ts --conf=./conf/windows/SuperBot.json"
+    "dev": "tsx watch src/index.ts",
+    "dev:super": "tsx watch src/index.ts --conf=./conf/windows/SuperBot.json",
+    "dev:easy": "tsx watch src/index.ts --conf=./conf/windows/EasyBot.json"
   },
   "author": "MemoS77",
   "license": "MIT",
