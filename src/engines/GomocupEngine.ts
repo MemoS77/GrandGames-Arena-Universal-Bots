@@ -1,5 +1,5 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { IEngine } from './IEngine'
+import { ChildProcessWithoutNullStreams } from 'child_process'
+import { BaseSpawnEngine } from './BaseSpawnEngine'
 import { BotTableInfo, ChessPos } from '../types/types'
 
 import cLog from '../funcs/cLog'
@@ -68,13 +68,8 @@ function sortAndAlternate(set: Set<string>, startWith: number): string[] {
   return result
 }
 
-export default class GomocupEngine implements IEngine {
-  private child: ChildProcessWithoutNullStreams | null = null
-  private onBestMove: ((bestMove: string) => void) | null = null
-  private onBestMoveReject: ((reason?: any) => void) | null = null
+export default class GomocupEngine extends BaseSpawnEngine {
   private onOk: (() => void) | null = null
-  private killTimeout: NodeJS.Timeout | null = null
-  private onProcessDeath: (() => void) | null = null
   private boardSize = 15
   private pos: PosInfo = { moveNumber: 0, oneMove: null, moves: new Set() }
 
@@ -145,93 +140,59 @@ export default class GomocupEngine implements IEngine {
     }
   }
 
-  start(
-    engineCommand: string,
+  protected setupEngine(
+    child: ChildProcessWithoutNullStreams,
     initCommands?: string[],
-    sendMessage?: (tableId: number, message: string) => void,
-    onProcessDeath?: () => void,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const child = spawn(engineCommand)
-      this.onProcessDeath = onProcessDeath || null
-
-      child.on('spawn', () => {
-        cLog('Engine launched!')
-        this.onOk = () => {
-          cLog('OK recieved!')
-          if (initCommands) {
-            for (const command of initCommands) {
-              cLog(`Init command: ${command}`)
-              this.send(command)
-            }
-          }
-          resolve()
-          this.onOk = null
-        }
-
-        this.send('START 15')
-      })
-
-      child.on('error', (err) => {
-        // Clean up resources on spawn error
-        this.child = null
-        reject(err)
-      })
-
-      const workBuffer = (output: string) => {
-        if (output.length === 0) return
-
-        cLog(`${output}`, 'blue')
-
-        if (this.onOk && output.indexOf('OK') !== -1) {
-          this.onOk()
-        }
-
-        if (this.onBestMove) {
-          // Проверяем, начинается ли строка с двух чисел, разделенных запятой
-          const match = output.match(/^(\d+),(\d+)/)
-          if (match) {
-            const move = `${match[1]},${match[2]}`
-            cLog('Move Found: ' + move, 'green')
-            this.onBestMove(move)
-            this.onBestMove = null // Сбрасываем обработчик после вызова
-          }
+    resolve?: () => void,
+    reject?: (err: any) => void,
+  ): void {
+    cLog('Engine launched!')
+    this.onOk = () => {
+      cLog('OK recieved!')
+      if (initCommands) {
+        for (const command of initCommands) {
+          cLog(`Init command: ${command}`)
+          this.send(command)
         }
       }
+      if (resolve) resolve()
+      this.onOk = null
+    }
 
-      let buffer = ''
-      child.stdout.on('data', (data) => {
-        // Добавляем новый блок данных к буферу
-        buffer += data.toString()
+    this.send('START 15')
+  }
 
-        // Проверяем, есть ли в буфере хотя бы одна полная строка
-        let index
-        while ((index = buffer.indexOf('\n')) !== -1) {
-          // Извлекаем строку до символа новой строки
-          const line = buffer.slice(0, index).trim()
-          // Отправляем строку в обработчик
-          workBuffer(line)
-          // Обрезаем буфер после символа новой строки
-          buffer = buffer.slice(index + 1)
-        }
-      })
+  protected handleOutput(output: string): void {
+    if (output.length === 0) return
 
-      // Read errors, if any (stderr)
-      child.stderr.on('data', (data) => {
-        cLog(`Program error: ${data}`, 'red')
-      })
+    cLog(`${output}`, 'blue')
 
-      // When the process finishes
-      child.on('close', (code) => {
-        cLog(`Program terminated with code: ${code}`, 'red')
-        if (this.onProcessDeath) {
-          this.onProcessDeath()
-          this.onProcessDeath = null
-        }
-      })
+    if (this.onOk && output.indexOf('OK') !== -1) {
+      this.onOk()
+    }
 
-      this.child = child
-    })
+    if (this.onBestMove) {
+      const match = output.match(/^(\d+),(\d+)/)
+      if (match) {
+        const move = `${match[1]},${match[2]}`
+        cLog('Move Found: ' + move, 'green')
+        this.onBestMove(move)
+        this.onBestMove = null
+      }
+    }
+  }
+
+  private buffer = ''
+
+  protected onStdoutData(data: Buffer): void {
+    this.buffer += data.toString()
+
+    let index
+    while ((index = this.buffer.indexOf('\n')) !== -1) {
+      const line = this.buffer.slice(0, index).trim()
+      this.handleOutput(line)
+      this.buffer = this.buffer.slice(index + 1)
+    }
   }
 
   private convertMove(player: number, move: string): string {
@@ -292,59 +253,20 @@ export default class GomocupEngine implements IEngine {
 
       this.applyPos(player)
 
-      // Return the best move after it's received
-      return new Promise((resolve, reject) => {
-        this.onBestMove = (bestMove) => {
-          resolve(this.convertMove(player, bestMove))
-          this.onBestMove = null
-          this.onBestMoveReject = null
-        }
-        this.onBestMoveReject = reject
-      })
+      return this.createBestMovePromise((bestMove) =>
+        this.convertMove(player, bestMove),
+      )
     }
     throw new Error('Engine not started')
   }
 
-  kill(): void {
-    if (this.child) {
-      // Reject pending promise if any
-      if (this.onBestMoveReject) {
-        this.onBestMoveReject(new Error('Engine killed'))
-        this.onBestMoveReject = null
-      }
-
-      // Call onProcessDeath before removing listeners
-      if (this.onProcessDeath) {
-        this.onProcessDeath()
-        this.onProcessDeath = null
-      }
-
-      // Remove all event listeners
-      this.child.stdout.removeAllListeners()
-      this.child.stderr.removeAllListeners()
-      this.child.removeAllListeners()
-
-      // Try graceful shutdown first, then force kill
-      this.child.kill('SIGTERM')
-
-      const childRef = this.child
-      this.killTimeout = setTimeout(() => {
-        if (childRef && !childRef.killed) {
-          childRef.kill('SIGKILL')
-        }
-        this.killTimeout = null
-      }, 1000)
-
-      this.child = null
-    }
-
-    // Clear state
-    this.onBestMove = null
+  protected clearEngineState(): void {
     this.onOk = null
     this.pos = { moveNumber: 0, oneMove: null, moves: new Set() }
+    this.buffer = ''
   }
 
-  private send(message: string): void {
+  protected send(message: string): void {
     if (this.child) {
       this.child.stdin.write(message + '\n')
       cLog(message, 'magenta')

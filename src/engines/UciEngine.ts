@@ -1,5 +1,5 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { IEngine } from './IEngine'
+import { ChildProcessWithoutNullStreams } from 'child_process'
+import { BaseSpawnEngine } from './BaseSpawnEngine'
 import dLog from '../funcs/cLog'
 import { BotTableInfo } from '../types/types'
 import { MAX_THINK_TIME } from '../conf'
@@ -9,21 +9,92 @@ const FIXED_MOVE_TIME_DEC = 5000
 const MIN_THINK_TIME = 100
 const BUFFER_WORK_DELAY = 50
 
-export default class UciEngine implements IEngine {
-  private child: ChildProcessWithoutNullStreams | null = null
-  private onBestMove: ((bestMove: string) => void) | null = null
-  private onBestMoveReject: ((reason?: any) => void) | null = null
+export default class UciEngine extends BaseSpawnEngine {
   private onUciOk: (() => void) | null = null
   private buffer: string = ''
   private bufferTimeout: NodeJS.Timeout | null = null
   private greetingsClearInterval: NodeJS.Timeout | null = null
-  private killTimeout: NodeJS.Timeout | null = null
   private engineName: string | null = null
   private engineAuthor: string | null = null
   private greatingsSended: Set<number> = new Set()
   private sendMessage: ((tableId: number, message: string) => void) | null =
     null
-  private onProcessDeath: (() => void) | null = null
+
+  protected setupEngine(
+    child: ChildProcessWithoutNullStreams,
+    initCommands?: string[],
+    resolve?: () => void,
+    reject?: (err: any) => void,
+  ): void {
+    this.greetingsClearInterval = setInterval(
+      () => {
+        this.greatingsSended.clear()
+      },
+      1000 * 60 * 60 * 12,
+    )
+
+    this.onUciOk = () => {
+      if (initCommands) {
+        for (const command of initCommands) {
+          this.send(command)
+        }
+      }
+      this.send('ucinewgame')
+      if (resolve) resolve()
+      this.onUciOk = null
+    }
+
+    this.send('uci')
+  }
+
+  protected onSpawnError(err: Error): void {
+    if (this.greetingsClearInterval) {
+      clearInterval(this.greetingsClearInterval)
+      this.greetingsClearInterval = null
+    }
+    super.onSpawnError(err)
+  }
+
+  protected handleOutput(output: string): void {
+    if (output.length === 0) return
+
+    if (this.onUciOk) {
+      const nameMatch = output.match(/id name (.+?)(?= id |$)/)
+      if (nameMatch) {
+        this.engineName = nameMatch[1].trim()
+        dLog(`Engine name: ${this.engineName}`)
+      }
+
+      const authorMatch = output.match(/id author (.+?)(?= id | option |$)/)
+      if (authorMatch) {
+        this.engineAuthor = authorMatch[1].trim()
+        dLog(`Engine author: ${this.engineAuthor}`)
+      }
+
+      if (output.indexOf('uciok') !== -1) {
+        this.onUciOk()
+      }
+    }
+
+    if (this.onBestMove) {
+      const bestMovePos = output.indexOf('bestmove')
+      if (bestMovePos !== -1) {
+        const bestMove = output.slice(bestMovePos + 9, bestMovePos + 9 + 5)
+        this.onBestMove(bestMove)
+        this.onBestMove = null
+      }
+    }
+  }
+
+  protected onStdoutData(data: Buffer): void {
+    const output = data.toString().replace(/\s+/g, ' ').trim()
+    this.buffer += output
+    if (this.bufferTimeout) clearTimeout(this.bufferTimeout)
+    this.bufferTimeout = setTimeout(() => {
+      this.handleOutput(this.buffer)
+      this.buffer = ''
+    }, BUFFER_WORK_DELAY)
+  }
 
   start(
     engineCommand: string,
@@ -31,104 +102,8 @@ export default class UciEngine implements IEngine {
     sendMessage?: (tableId: number, message: string) => void,
     onProcessDeath?: () => void,
   ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const child = spawn(engineCommand)
-      this.sendMessage = sendMessage || null
-      this.onProcessDeath = onProcessDeath || null
-      dLog(`Spawned engine: ${engineCommand}`)
-
-      // Clear greatings cache
-      this.greetingsClearInterval = setInterval(
-        () => {
-          this.greatingsSended.clear()
-        },
-        1000 * 60 * 60 * 12,
-      )
-
-      child.on('spawn', () => {
-        this.onUciOk = () => {
-          if (initCommands) {
-            for (const command of initCommands) {
-              this.send(command)
-            }
-          }
-          this.send('ucinewgame')
-          resolve()
-          this.onUciOk = null
-        }
-
-        this.send('uci')
-      })
-
-      child.on('error', (err) => {
-        // Clean up resources on spawn error
-        if (this.greetingsClearInterval) {
-          clearInterval(this.greetingsClearInterval)
-          this.greetingsClearInterval = null
-        }
-        this.child = null
-        reject(err)
-      })
-
-      const workBuffer = (output: string) => {
-        if (output.length === 0) return
-
-        if (this.onUciOk) {
-          const nameMatch = output.match(/id name (.+?)(?= id |$)/)
-          if (nameMatch) {
-            this.engineName = nameMatch[1].trim()
-            dLog(`Engine name: ${this.engineName}`)
-          }
-
-          const authorMatch = output.match(/id author (.+?)(?= id | option |$)/)
-          if (authorMatch) {
-            this.engineAuthor = authorMatch[1].trim()
-            dLog(`Engine author: ${this.engineAuthor}`)
-          }
-
-          if (output.indexOf('uciok') !== -1) {
-            this.onUciOk()
-          }
-        }
-
-        if (this.onBestMove) {
-          const bestMovePos = output.indexOf('bestmove')
-          if (bestMovePos !== -1) {
-            const bestMove = output.slice(bestMovePos + 9, bestMovePos + 9 + 5)
-
-            this.onBestMove(bestMove)
-            this.onBestMove = null
-          }
-        }
-      }
-
-      child.stdout.on('data', (data) => {
-        const output = data.toString().replace(/\s+/g, ' ').trim()
-        //dLog(`Received: ${output}`)
-        this.buffer += output
-        if (this.bufferTimeout) clearTimeout(this.bufferTimeout)
-        this.bufferTimeout = setTimeout(() => {
-          workBuffer(this.buffer)
-          this.buffer = ''
-        }, BUFFER_WORK_DELAY)
-      })
-
-      // Read errors, if any (stderr)
-      child.stderr.on('data', (data) => {
-        console.error(`Program error: ${data}`)
-      })
-
-      // When the process finishes
-      child.on('close', (code) => {
-        dLog(`Program terminated with code: ${code}`)
-        if (this.onProcessDeath) {
-          this.onProcessDeath()
-          this.onProcessDeath = null
-        }
-      })
-
-      this.child = child
-    })
+    this.sendMessage = sendMessage || null
+    return super.start(engineCommand, initCommands, sendMessage, onProcessDeath)
   }
 
   private convertMove(stockfishMove: string, player: number): string {
@@ -193,78 +168,28 @@ export default class UciEngine implements IEngine {
         this.send(`go wtime ${wt} btime ${bt}`)
       }
 
-      // Return the best move after it's received
-      return new Promise((resolve, reject) => {
-        this.onBestMove = (bestMove) => {
-          resolve(this.convertMove(bestMove, player))
-          this.onBestMove = null
-          this.onBestMoveReject = null
-        }
-        this.onBestMoveReject = reject
-      })
+      return this.createBestMovePromise((bestMove) =>
+        this.convertMove(bestMove, player),
+      )
     }
     throw new Error('Engine not started')
   }
 
-  kill(): void {
-    dLog('kill called in uci')
-    if (this.child) {
-      dLog('kill: child exists')
-      // Reject pending promise if any
-      if (this.onBestMoveReject) {
-        this.onBestMoveReject(new Error('Engine killed'))
-        this.onBestMoveReject = null
-      }
-
-      // Clear all timers
-      if (this.bufferTimeout) {
-        clearTimeout(this.bufferTimeout)
-        this.bufferTimeout = null
-      }
-
-      if (this.greetingsClearInterval) {
-        clearInterval(this.greetingsClearInterval)
-        this.greetingsClearInterval = null
-      }
-
-      // Call onProcessDeath before removing listeners
-      if (this.onProcessDeath) {
-        this.onProcessDeath()
-        this.onProcessDeath = null
-      }
-
-      // Remove all event listeners
-      this.child.stdout.removeAllListeners()
-      this.child.stderr.removeAllListeners()
-      this.child.removeAllListeners()
-
-      // Try graceful shutdown first, then force kill
-      this.child.kill('SIGTERM')
-
-      const childRef = this.child
-      this.killTimeout = setTimeout(() => {
-        if (childRef && !childRef.killed) {
-          childRef.kill('SIGKILL')
-        }
-        this.killTimeout = null
-        dLog('kill: force killed')
-      }, 2000)
-
-      this.child = null
+  protected clearTimers(): void {
+    super.clearTimers()
+    if (this.bufferTimeout) {
+      clearTimeout(this.bufferTimeout)
+      this.bufferTimeout = null
     }
+    if (this.greetingsClearInterval) {
+      clearInterval(this.greetingsClearInterval)
+      this.greetingsClearInterval = null
+    }
+  }
 
-    // Clear state
-    this.onBestMove = null
+  protected clearEngineState(): void {
     this.onUciOk = null
     this.buffer = ''
     this.greatingsSended.clear()
-  }
-
-  private send(message: string): void {
-    if (this.child) {
-      dLog(`Sending: ${message}`)
-      this.child.stdin.write(message + '\n')
-      // this.child.stdin.end(); // Uncomment if you want to close stdin after sending
-    }
   }
 }
