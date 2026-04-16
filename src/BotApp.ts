@@ -63,7 +63,7 @@ export default class BotApp {
           if (nowTime - ei.lastMoveTime > MAX_TABLE_LIVE_TIME) {
             console.log('HARD KILL', key)
             ei.engine.kill()
-            this.engines.delete(key)
+            // Don't delete here - onProcessDeath callback will handle it
           }
         })
       }
@@ -189,7 +189,7 @@ export default class BotApp {
         // Remove Table
         if (ei) {
           ei.engine.kill()
-          this.engines.delete(id)
+          // Don't delete here - onProcessDeath callback will handle it
         }
       }
     })
@@ -213,7 +213,7 @@ export default class BotApp {
     }
 
     const onProcessDeath = () => {
-      console.log(`Engine process died for table ${tableId}, cleaning up`)
+      dLog(`Engine process died for table ${tableId}, cleaning up`)
       this.engines.delete(tableId)
     }
 

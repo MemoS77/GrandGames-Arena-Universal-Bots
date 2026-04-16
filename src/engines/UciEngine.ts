@@ -120,7 +120,7 @@ export default class UciEngine implements IEngine {
 
       // When the process finishes
       child.on('close', (code) => {
-        console.log(`Program terminated with code: ${code}`)
+        dLog(`Program terminated with code: ${code}`)
         if (this.onProcessDeath) {
           this.onProcessDeath()
           this.onProcessDeath = null
@@ -207,7 +207,9 @@ export default class UciEngine implements IEngine {
   }
 
   kill(): void {
+    dLog('kill called in uci')
     if (this.child) {
+      dLog('kill: child exists')
       // Reject pending promise if any
       if (this.onBestMoveReject) {
         this.onBestMoveReject(new Error('Engine killed'))
@@ -225,6 +227,12 @@ export default class UciEngine implements IEngine {
         this.greetingsClearInterval = null
       }
 
+      // Call onProcessDeath before removing listeners
+      if (this.onProcessDeath) {
+        this.onProcessDeath()
+        this.onProcessDeath = null
+      }
+
       // Remove all event listeners
       this.child.stdout.removeAllListeners()
       this.child.stderr.removeAllListeners()
@@ -239,7 +247,8 @@ export default class UciEngine implements IEngine {
           childRef.kill('SIGKILL')
         }
         this.killTimeout = null
-      }, 1000)
+        dLog('kill: force killed')
+      }, 2000)
 
       this.child = null
     }

@@ -313,6 +313,12 @@ export default class GomocupEngine implements IEngine {
         this.onBestMoveReject = null
       }
 
+      // Call onProcessDeath before removing listeners
+      if (this.onProcessDeath) {
+        this.onProcessDeath()
+        this.onProcessDeath = null
+      }
+
       // Remove all event listeners
       this.child.stdout.removeAllListeners()
       this.child.stderr.removeAllListeners()
