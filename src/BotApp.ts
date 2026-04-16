@@ -10,7 +10,7 @@ import {
 
 import { IEngine } from './engines/IEngine'
 import UciEngine from './engines/UciEngine'
-import { GamesIds, GamesNames, TableState } from './types/enums'
+import { GameNames, GamesIds, TableState } from './types/enums'
 import GomocupEngine from './engines/GomocupEngine'
 
 import dLog from './funcs/dLog'
@@ -31,8 +31,13 @@ export default class BotApp {
   private engines: Map<number, EngineInfo> = new Map()
   private engineCreationLocks: Set<number> = new Set()
 
-  private getSupportedGames(): GameId[] {
-    return Object.keys(gamesConf).map((key) => GamesIds[key])
+  private getSupportedGames(): number[] {
+    return Object.keys(gamesConf).map((key) => {
+      if (!(key in GamesIds)) {
+        throw new Error(`Game ${key} not found in GamesIds`)
+      }
+      return GamesIds[key]
+    })
   }
 
   async start(): Promise<void> {
@@ -75,7 +80,7 @@ export default class BotApp {
         const games = this.getSupportedGames()
         dLog(`Try connect. Games: ${games.join(', ')}`)
         this.sdk
-          .connect(JWT_TOKEN, games, { serverUrl: WS_SERVER })
+          .connect(JWT_TOKEN, games as GameId[], { serverUrl: WS_SERVER })
           .then((r) => {
             dLog('Connected! User data: ', r)
             this.connected = true
@@ -195,7 +200,7 @@ export default class BotApp {
     tableId: number,
   ): Promise<IEngine> {
     dLog(`Prepare engine for game ${gameId}`)
-    const gameName = GamesNames[gameId]
+    const gameName = GameNames[gameId]
     if (!gameName) throw new Error(`Unknown game ${gameId}`)
     const conf = gamesConf[gameName]
     if (!conf) throw new Error(`Game ${gameName} not supported`)
