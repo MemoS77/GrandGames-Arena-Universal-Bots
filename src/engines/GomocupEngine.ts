@@ -2,7 +2,7 @@ import { ChildProcessWithoutNullStreams } from 'child_process'
 import { BaseSpawnEngine } from './BaseSpawnEngine'
 import { BotTableInfo, ChessPos } from '../types/types'
 
-import cLog from '../funcs/cLog'
+import cLog from '../utils/cLog'
 
 const PING_DELAY = 1000
 const FIXED_MOVE_TIME_DEC = 5000

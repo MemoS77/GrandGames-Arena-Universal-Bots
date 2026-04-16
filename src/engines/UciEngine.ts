@@ -1,6 +1,6 @@
 import { ChildProcessWithoutNullStreams } from 'child_process'
 import { BaseSpawnEngine } from './BaseSpawnEngine'
-import dLog from '../funcs/dLog'
+import dLog from '../utils/dLog'
 import { BotTableInfo } from '../types/types'
 import { MAX_THINK_TIME } from '../conf'
 

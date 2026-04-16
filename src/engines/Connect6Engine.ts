@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, SpawnOptions } from 'child_process'
 import { BaseSpawnEngine } from './BaseSpawnEngine'
 import { BotTableInfo, ChessPos } from '../types/types'
-import cLog from '../funcs/cLog'
+import cLog from '../utils/cLog'
 //import path from 'path'
 
 const SHOW_MESSAGES = false

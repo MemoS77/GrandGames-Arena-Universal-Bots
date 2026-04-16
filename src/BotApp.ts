@@ -13,7 +13,7 @@ import UciEngine from './engines/UciEngine'
 import { GameNames, GamesIds, TableState } from './types/enums'
 import GomocupEngine from './engines/GomocupEngine'
 
-import dLog from './funcs/dLog'
+import dLog from './utils/dLog'
 import { ChessPos } from './types/types'
 import { BotSDK, GameId, PositionInfo } from 'gga-bots'
 

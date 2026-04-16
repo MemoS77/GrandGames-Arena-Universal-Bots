@@ -4,7 +4,7 @@ import {
   SpawnOptions,
 } from 'child_process'
 import { IEngine } from './IEngine'
-import dLog from '../funcs/cLog'
+import dLog from '../utils/cLog'
 
 const SIGKILL_TIMEOUT = 2000
 

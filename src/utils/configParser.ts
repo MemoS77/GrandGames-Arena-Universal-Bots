@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 import { exit } from 'process'
 import { AppConf } from '../types/types'
-import cLog from '../funcs/cLog'
+import cLog from './cLog'
 
 /**
  * Парсит путь к конфигурационному файлу из аргументов командной строки
