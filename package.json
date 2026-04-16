@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rollup -c",
     "start": "node dist/bundle.js --conf=./conf/conf.houdini.json",
-    "dev": "tsx watch src/index.ts --conf=./conf/conf.houdini.json",
+    "dev": "tsx watch src/index.ts",
     "dev:gomoku": "tsx watch src/index.ts --conf=./conf/conf.gomoku.pela.json",
     "start:stockfish": "node dist/bundle.js --conf=./conf/conf.stockfish.json"
   },

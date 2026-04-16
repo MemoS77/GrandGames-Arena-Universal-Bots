@@ -2,6 +2,7 @@ import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { IEngine } from './IEngine'
 import dLog from '../funcs/cLog'
 import { BotTableInfo } from '../types/types'
+import { MAX_THINK_TIME } from '../conf'
 
 const PING_DELAY = 1000
 const FIXED_MOVE_TIME_DEC = 5000
@@ -11,27 +12,33 @@ const BUFFER_WORK_DELAY = 50
 export default class UciEngine implements IEngine {
   private child: ChildProcessWithoutNullStreams | null = null
   private onBestMove: ((bestMove: string) => void) | null = null
+  private onBestMoveReject: ((reason?: any) => void) | null = null
   private onUciOk: (() => void) | null = null
   private buffer: string = ''
   private bufferTimeout: NodeJS.Timeout | null = null
+  private greetingsClearInterval: NodeJS.Timeout | null = null
+  private killTimeout: NodeJS.Timeout | null = null
   private engineName: string | null = null
   private engineAuthor: string | null = null
   private greatingsSended: Set<number> = new Set()
   private sendMessage: ((tableId: number, message: string) => void) | null =
     null
+  private onProcessDeath: (() => void) | null = null
 
   start(
     engineCommand: string,
     initCommands?: string[],
     sendMessage?: (tableId: number, message: string) => void,
+    onProcessDeath?: () => void,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const child = spawn(engineCommand)
       this.sendMessage = sendMessage || null
+      this.onProcessDeath = onProcessDeath || null
       dLog(`Spawned engine: ${engineCommand}`)
 
       // Clear greatings cache
-      setInterval(
+      this.greetingsClearInterval = setInterval(
         () => {
           this.greatingsSended.clear()
         },
@@ -54,6 +61,12 @@ export default class UciEngine implements IEngine {
       })
 
       child.on('error', (err) => {
+        // Clean up resources on spawn error
+        if (this.greetingsClearInterval) {
+          clearInterval(this.greetingsClearInterval)
+          this.greetingsClearInterval = null
+        }
+        this.child = null
         reject(err)
       })
 
@@ -108,6 +121,10 @@ export default class UciEngine implements IEngine {
       // When the process finishes
       child.on('close', (code) => {
         console.log(`Program terminated with code: ${code}`)
+        if (this.onProcessDeath) {
+          this.onProcessDeath()
+          this.onProcessDeath = null
+        }
       })
 
       this.child = child
@@ -160,10 +177,13 @@ export default class UciEngine implements IEngine {
 
       if (fixedTime) {
         const pTime = player === 1 ? blackTime : whiteTime
-        const tm = Math.max(
+        let tm = Math.max(
           pTime - PING_DELAY - FIXED_MOVE_TIME_DEC,
           MIN_THINK_TIME,
         )
+
+        if (tm > MAX_THINK_TIME) tm = MAX_THINK_TIME
+        dLog(`Move time: ${tm}`)
 
         this.send(`go movetime ${tm}`)
       } else if (whiteTime && blackTime) {
@@ -174,10 +194,13 @@ export default class UciEngine implements IEngine {
       }
 
       // Return the best move after it's received
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.onBestMove = (bestMove) => {
           resolve(this.convertMove(bestMove, player))
+          this.onBestMove = null
+          this.onBestMoveReject = null
         }
+        this.onBestMoveReject = reject
       })
     }
     throw new Error('Engine not started')
@@ -185,8 +208,47 @@ export default class UciEngine implements IEngine {
 
   kill(): void {
     if (this.child) {
-      this.child.kill('SIGKILL')
+      // Reject pending promise if any
+      if (this.onBestMoveReject) {
+        this.onBestMoveReject(new Error('Engine killed'))
+        this.onBestMoveReject = null
+      }
+
+      // Clear all timers
+      if (this.bufferTimeout) {
+        clearTimeout(this.bufferTimeout)
+        this.bufferTimeout = null
+      }
+
+      if (this.greetingsClearInterval) {
+        clearInterval(this.greetingsClearInterval)
+        this.greetingsClearInterval = null
+      }
+
+      // Remove all event listeners
+      this.child.stdout.removeAllListeners()
+      this.child.stderr.removeAllListeners()
+      this.child.removeAllListeners()
+
+      // Try graceful shutdown first, then force kill
+      this.child.kill('SIGTERM')
+
+      const childRef = this.child
+      this.killTimeout = setTimeout(() => {
+        if (childRef && !childRef.killed) {
+          childRef.kill('SIGKILL')
+        }
+        this.killTimeout = null
+      }, 1000)
+
+      this.child = null
     }
+
+    // Clear state
+    this.onBestMove = null
+    this.onUciOk = null
+    this.buffer = ''
+    this.greatingsSended.clear()
   }
 
   private send(message: string): void {

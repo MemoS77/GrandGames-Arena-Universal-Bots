@@ -5,6 +5,7 @@ import {
   MAX_SEARCH_MOVE_RESTART,
   MAX_TABLE_LIVE_TIME,
   RECONNECT_TIMEOUT,
+  WS_SERVER,
 } from './conf'
 
 import { IEngine } from './engines/IEngine'
@@ -28,6 +29,7 @@ export default class BotApp {
   private login: string = ''
   private connected: boolean = false
   private engines: Map<number, EngineInfo> = new Map()
+  private engineCreationLocks: Set<number> = new Set()
 
   private getSupportedGames(): GameId[] {
     return Object.keys(gamesConf).map((key) => GamesIds[key])
@@ -40,6 +42,7 @@ export default class BotApp {
     this.sdk.onDisconnect((code) => {
       this.connected = false
       console.log('Disconnected', code)
+
       setTimeout(() => {
         this.connect()
       }, RECONNECT_TIMEOUT)
@@ -70,9 +73,9 @@ export default class BotApp {
 
       const doConnect = () => {
         const games = this.getSupportedGames()
-        dLog(`Try connect`)
+        dLog(`Try connect. Games: ${games.join(', ')}`)
         this.sdk
-          .connect(JWT_TOKEN, games)
+          .connect(JWT_TOKEN, games, { serverUrl: WS_SERVER })
           .then((r) => {
             dLog('Connected! User data: ', r)
             this.connected = true
@@ -92,26 +95,38 @@ export default class BotApp {
 
   public async listenPos(): Promise<void> {
     this.sdk.onPosition(async (data: PositionInfo<ChessPos>) => {
-      dLog('Pos: ', data)
+      //dLog('Pos: ', data)
       const id: number = +data.tableId
       let ei = this.engines.get(id)
 
       if (data.state === TableState.Started) {
         // Game launched
         if (!ei) {
-          let engine: IEngine
-          try {
-            engine = await this.prepareEngine(data.game)
-          } catch (err: Error | any) {
-            console.error(err.message)
+          // Prevent race condition - check if engine is being created
+          if (this.engineCreationLocks.has(id)) {
+            console.log(
+              `Engine for table ${id} is already being created, skipping`,
+            )
             return
           }
+
+          this.engineCreationLocks.add(id)
+          let engine: IEngine
+          try {
+            engine = await this.prepareEngine(data.game, id)
+          } catch (err: Error | any) {
+            console.error(err.message)
+            this.engineCreationLocks.delete(id)
+            return
+          }
+
           ei = {
             engine,
             nowThinkMove: null,
             lastMoveTime: new Date().getTime(),
           }
           this.engines.set(id, ei)
+          this.engineCreationLocks.delete(id)
         }
 
         if (!ei.nowThinkMove && data.needMove) {
@@ -147,8 +162,23 @@ export default class BotApp {
             } catch (err) {
               tryNumber++
               console.error('Move handle error. Restart analize!', err)
+
+              // If engine is dead, remove it and break
+              if (err instanceof Error && err.message === 'Engine killed') {
+                console.error('Engine is dead, removing from map')
+                this.engines.delete(id)
+                break
+              }
             }
           } while (!successMove && tryNumber < MAX_SEARCH_MOVE_RESTART)
+
+          // Reset nowThinkMove if all attempts failed
+          if (!successMove && ei.nowThinkMove !== null) {
+            console.error(
+              `Failed to make move after ${tryNumber} attempts, resetting nowThinkMove`,
+            )
+            ei.nowThinkMove = null
+          }
         }
       } else {
         // Remove Table
@@ -160,7 +190,10 @@ export default class BotApp {
     })
   }
 
-  private async prepareEngine(gameId: number): Promise<IEngine> {
+  private async prepareEngine(
+    gameId: number,
+    tableId: number,
+  ): Promise<IEngine> {
     dLog(`Prepare engine for game ${gameId}`)
     const gameName = GamesNames[gameId]
     if (!gameName) throw new Error(`Unknown game ${gameId}`)
@@ -174,14 +207,29 @@ export default class BotApp {
       this.sdk.message(tableId, message)
     }
 
+    const onProcessDeath = () => {
+      console.log(`Engine process died for table ${tableId}, cleaning up`)
+      this.engines.delete(tableId)
+    }
+
     switch (conf.engineKind) {
       case 'uci':
         engine = new UciEngine()
-        await engine.start(command, conf.initCommands, messageFn)
+        await engine.start(
+          command,
+          conf.initCommands,
+          messageFn,
+          onProcessDeath,
+        )
         return engine
       case 'gomocup':
         engine = new GomocupEngine()
-        await engine.start(command, conf.initCommands, messageFn)
+        await engine.start(
+          command,
+          conf.initCommands,
+          messageFn,
+          onProcessDeath,
+        )
         return engine
       default:
         throw new Error(`Enginekind ${conf.engineKind} not supported`)

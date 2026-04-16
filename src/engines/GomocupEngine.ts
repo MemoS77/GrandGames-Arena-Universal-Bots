@@ -71,7 +71,10 @@ function sortAndAlternate(set: Set<string>, startWith: number): string[] {
 export default class GomocupEngine implements IEngine {
   private child: ChildProcessWithoutNullStreams | null = null
   private onBestMove: ((bestMove: string) => void) | null = null
+  private onBestMoveReject: ((reason?: any) => void) | null = null
   private onOk: (() => void) | null = null
+  private killTimeout: NodeJS.Timeout | null = null
+  private onProcessDeath: (() => void) | null = null
   private boardSize = 15
   private pos: PosInfo = { moveNumber: 0, oneMove: null, moves: new Set() }
 
@@ -142,9 +145,15 @@ export default class GomocupEngine implements IEngine {
     }
   }
 
-  start(engineCommand: string, initCommands?: string[]): Promise<void> {
+  start(
+    engineCommand: string,
+    initCommands?: string[],
+    sendMessage?: (tableId: number, message: string) => void,
+    onProcessDeath?: () => void,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const child = spawn(engineCommand)
+      this.onProcessDeath = onProcessDeath || null
 
       child.on('spawn', () => {
         cLog('Engine launched!')
@@ -164,6 +173,8 @@ export default class GomocupEngine implements IEngine {
       })
 
       child.on('error', (err) => {
+        // Clean up resources on spawn error
+        this.child = null
         reject(err)
       })
 
@@ -213,6 +224,10 @@ export default class GomocupEngine implements IEngine {
       // When the process finishes
       child.on('close', (code) => {
         cLog(`Program terminated with code: ${code}`, 'red')
+        if (this.onProcessDeath) {
+          this.onProcessDeath()
+          this.onProcessDeath = null
+        }
       })
 
       this.child = child
@@ -278,10 +293,13 @@ export default class GomocupEngine implements IEngine {
       this.applyPos(player)
 
       // Return the best move after it's received
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.onBestMove = (bestMove) => {
           resolve(this.convertMove(player, bestMove))
+          this.onBestMove = null
+          this.onBestMoveReject = null
         }
+        this.onBestMoveReject = reject
       })
     }
     throw new Error('Engine not started')
@@ -289,8 +307,35 @@ export default class GomocupEngine implements IEngine {
 
   kill(): void {
     if (this.child) {
-      this.child.kill('SIGKILL')
+      // Reject pending promise if any
+      if (this.onBestMoveReject) {
+        this.onBestMoveReject(new Error('Engine killed'))
+        this.onBestMoveReject = null
+      }
+
+      // Remove all event listeners
+      this.child.stdout.removeAllListeners()
+      this.child.stderr.removeAllListeners()
+      this.child.removeAllListeners()
+
+      // Try graceful shutdown first, then force kill
+      this.child.kill('SIGTERM')
+
+      const childRef = this.child
+      this.killTimeout = setTimeout(() => {
+        if (childRef && !childRef.killed) {
+          childRef.kill('SIGKILL')
+        }
+        this.killTimeout = null
+      }, 1000)
+
+      this.child = null
     }
+
+    // Clear state
+    this.onBestMove = null
+    this.onOk = null
+    this.pos = { moveNumber: 0, oneMove: null, moves: new Set() }
   }
 
   private send(message: string): void {
