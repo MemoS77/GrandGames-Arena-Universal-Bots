@@ -42,3 +42,8 @@ Implementation examples: Stockfish: https://stockfishchess.org/download/
 
 Protocol for programs in Gomoku tournaments on the service https://gomocup.org/
 Program examples: https://gomocup.org/download-for-developers/#source
+
+---
+
+The engines are not included in the repositories; this is only an example of how to implement the functionality needed to connect them.
+You can write your own engine using any of the implemented protocols and use its software to connect to GrandGames Arena, or implement your own custom protocol.
