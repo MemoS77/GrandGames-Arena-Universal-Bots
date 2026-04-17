@@ -43,7 +43,7 @@ export const GamesIds: Record<string, GameId> = {
   pente: GameId.Pente,
   rps: GameId.RPS,
   islands: GameId.FRC,
-  rudraughts: GameId.RuDraughts,
+  draughts: GameId.RuDraughts,
   losingdraughts: GameId.LosingDraughts,
   checkers: GameId.Checkers,
   internationaldraughts: GameId.InternationalDraughts,

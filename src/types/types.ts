@@ -21,4 +21,5 @@ export type BotTableInfo = {
   id?: number
   enemyLogin?: string
   enemyRating?: number
+  players?: Array<number | null>
 }

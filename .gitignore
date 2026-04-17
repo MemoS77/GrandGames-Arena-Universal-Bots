@@ -9,3 +9,4 @@ bots_files/*
 compose.dev.yml
 compose.prod.yml
 *.tgz
+/arenaEngines/*
