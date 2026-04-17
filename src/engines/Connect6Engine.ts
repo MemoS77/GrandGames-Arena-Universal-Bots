@@ -50,16 +50,6 @@ export default class Connect6Engine extends BaseSpawnEngine {
   private varDepth: boolean = false
   private lastThinkTime: number = 0
 
-  protected getSpawnOptions(engineCommand: string): SpawnOptions {
-    const enginePath = engineCommand.split(' ')[0]
-    const engineDir = path.dirname(enginePath)
-    dLog(`Engine dir: ${engineDir}.`)
-    // Engine request working directory for config files
-    return {
-      cwd: engineDir,
-    }
-  }
-
   private fillStones(lines: string[]) {
     this.pos.newStones = []
 

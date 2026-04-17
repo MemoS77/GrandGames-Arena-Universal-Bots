@@ -5,7 +5,7 @@ import {
 } from 'child_process'
 import path from 'path'
 import { IEngine } from './IEngine'
-import dLog from '../utils/cLog'
+import dLog from '../utils/dLog'
 
 const SIGKILL_TIMEOUT = 2000
 
@@ -36,8 +36,13 @@ export abstract class BaseSpawnEngine implements IEngine {
 
   protected abstract clearEngineState(): void
 
-  protected getSpawnOptions(engineCommand: string): SpawnOptions | undefined {
-    return undefined
+  protected getSpawnOptions(engineCommand: string): SpawnOptions {
+    const enginePath = engineCommand.split(' ')[0]
+    const engineDir = path.dirname(enginePath)
+    dLog(`Engine dir: ${engineDir}`)
+    return {
+      cwd: engineDir,
+    }
   }
 
   start(

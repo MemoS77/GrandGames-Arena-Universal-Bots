@@ -4,7 +4,7 @@ services:
     container_name: superbot-dev
     restart: on-failure:3
     environment:
-      - DEBUG=true
+      - DEBUG=false
     volumes:
       - ./conf/ubuntu/dev/SuperBot.json:/app/conf.json:ro
       - ./ubuntu:/app/ubuntu
