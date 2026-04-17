@@ -1,4 +1,6 @@
 import {
+  ALLOW_BOTS,
+  ALLOW_GUESTS,
   gamesConf,
   JWT_TOKEN,
   LOOP_INTERVAL,
@@ -74,13 +76,18 @@ export default class BotApp {
     return new Promise((resolve, reject) => {
       if (this.connected) {
         resolve()
+        return
       }
 
       const doConnect = () => {
         const games = this.getSupportedGames()
         dLog(`Try connect. Games: ${games.join(', ')}`)
         this.sdk
-          .connect(JWT_TOKEN, games as GameId[], { serverUrl: WS_SERVER })
+          .connect(JWT_TOKEN, games as GameId[], {
+            serverUrl: WS_SERVER,
+            allowGuests: ALLOW_GUESTS,
+            allowBots: ALLOW_BOTS,
+          })
           .then((r) => {
             dLog('Connected! User data: ', r)
             this.connected = true

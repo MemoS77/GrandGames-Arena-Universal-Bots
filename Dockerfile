@@ -1,7 +1,5 @@
-# Используем Ubuntu 24.04 как базовый образ
 FROM ubuntu:24.04
 
-# Устанавливаем необходимые зависимости и Node.js 24
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -14,22 +12,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаем рабочую директорию
+
 WORKDIR /app
-
-# Копируем package.json и package-lock.json
-COPY package*.json ./
-
-# Устанавливаем зависимости
-RUN npm ci --only=production
-
-# Копируем собранный код приложения (должен быть собран локально: npm run build)
 COPY dist ./dist
-
-# Примечание: папка ubuntu монтируется через volume в docker-compose.yml
-# Если нужен самодостаточный образ без volumes, раскомментируйте:
-# COPY ubuntu ./ubuntu
-# RUN find ./ubuntu -type f -exec chmod +x {} \;
-
-# Запускаем приложение с конфигом из /app/conf.json
 CMD ["node", "dist/bundle.js"]
