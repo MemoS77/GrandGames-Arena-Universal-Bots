@@ -28,4 +28,4 @@ export const LOOP_INTERVAL = 30000
 
 export const gamesConf = conf!.games
 
-export const MAX_SEARCH_MOVE_RESTART = 5
+export const MAX_SEARCH_MOVE_RESTART = 3

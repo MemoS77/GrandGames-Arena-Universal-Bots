@@ -141,10 +141,11 @@ export default class BotApp {
           const initTime = new Date().getTime()
           let tryNumber = 0
           do {
+            let move: string | null = null
             try {
               successMove = false
               const timeDec = new Date().getTime() - initTime
-              const move = await ei.engine.getBestMove(
+              move = await ei.engine.getBestMove(
                 {
                   id: id,
                   enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
@@ -166,7 +167,7 @@ export default class BotApp {
               }
             } catch (err) {
               tryNumber++
-              console.error('Move handle error. Restart analize!', err)
+              console.error(`Move failed (${move}). Restart analize!`, err)
 
               // If engine is dead, remove it and break
               if (err instanceof Error && err.message === 'Engine killed') {
