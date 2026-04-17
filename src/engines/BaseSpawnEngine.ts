@@ -23,7 +23,7 @@ export abstract class BaseSpawnEngine implements IEngine {
     fixedTime: number,
     whiteTime: number,
     blackTime: number,
-  ): Promise<string>
+  ): Promise<string | string[]>
 
   protected abstract setupEngine(
     child: ChildProcessWithoutNullStreams,
@@ -163,8 +163,8 @@ export abstract class BaseSpawnEngine implements IEngine {
   }
 
   protected createBestMovePromise(
-    convertMove: (move: string) => string,
-  ): Promise<string> {
+    convertMove: (move: string) => string | string[],
+  ): Promise<string | string[]> {
     if (!this.child) {
       throw new Error('Engine not started')
     }

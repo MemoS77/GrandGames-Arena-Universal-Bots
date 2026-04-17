@@ -141,7 +141,7 @@ export default class BotApp {
           const initTime = new Date().getTime()
           let tryNumber = 0
           do {
-            let move: string | null = null
+            let move: string | string[] | null = null
             try {
               successMove = false
               const timeDec = new Date().getTime() - initTime
@@ -159,8 +159,16 @@ export default class BotApp {
                 data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
               )
 
-              if (this.connected) {
-                await this.sdk.move(id, move)
+              if (this.connected && move !== null) {
+                // Handle multiple moves (e.g., Connect6 double moves)
+                if (Array.isArray(move)) {
+                  for (let i = 0; i < move.length; i++) {
+                    await this.sdk.move(id, move[i])
+                    await new Promise((resolve) => setTimeout(resolve, 50))
+                  }
+                } else {
+                  await this.sdk.move(id, move)
+                }
                 successMove = true
                 ei.lastMoveTime = new Date().getTime()
                 ei.nowThinkMove = null

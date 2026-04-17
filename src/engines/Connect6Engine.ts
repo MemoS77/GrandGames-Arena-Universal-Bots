@@ -41,10 +41,10 @@ const defPos: PosInfo = {
   firstMove: null,
 }
 
-const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj))
+const deepCopy = <T>(obj: T): T => structuredClone(obj) as T
 
 export default class Connect6Engine extends BaseSpawnEngine {
-  private pos: PosInfo = deepCopy(defPos)
+  private pos: PosInfo = structuredClone(defPos)
   private nowDepth = 3
   private buffer: string = ''
   private varDepth: boolean = false
@@ -104,6 +104,7 @@ export default class Connect6Engine extends BaseSpawnEngine {
   }
 
   private workPos(pos: ChessPos, player: number) {
+    dLog(`Work pos for player ${player}: ${JSON.stringify(pos, null, 2)} `)
     const fenParts = pos.fen.split(' ')
     const moveNumber = parseInt(fenParts[5])
     if (moveNumber <= this.pos.moveNumber) {
@@ -165,8 +166,15 @@ export default class Connect6Engine extends BaseSpawnEngine {
 
     if (this.onBestMove && line.indexOf('move') === 0) {
       const parts = line.split(' ')
-      const bestMove = parts[1]
-      if (bestMove !== 'XXXX') {
+      const bestMove = parts[1].trim()
+      // В справке, которая посылается есть строка move XXXX, исправляем чтобы не срабатывало на нее
+      // Также проверяем что bestMove существует и имеет корректную длину (2 или 4 символа)
+      if (
+        bestMove &&
+        bestMove !== 'XXXX' &&
+        (bestMove.length === 2 || bestMove.length === 4)
+      ) {
+        cLog(`Best move: ${bestMove}`, 'green')
         this.onBestMove(bestMove)
         this.onBestMove = null
       }
@@ -198,7 +206,7 @@ export default class Connect6Engine extends BaseSpawnEngine {
     fixedTime: number,
     whiteTime: number,
     blackTime: number,
-  ): Promise<string> {
+  ): Promise<string | string[]> {
     if (this.child) {
       this.workPos(pos, player)
 
@@ -228,8 +236,7 @@ export default class Connect6Engine extends BaseSpawnEngine {
             }
           }
         }
-        const converted = this.convertMove(ans, player)
-        return Array.isArray(converted) ? converted.join('') : converted
+        return this.convertMove(ans, player)
       })
     }
     throw new Error('Engine not started')
@@ -247,7 +254,7 @@ export default class Connect6Engine extends BaseSpawnEngine {
     }, 200)
   }
 
-  private convertMove(move: string[], player: number): string[] {
+  private convertMove(move: string[], player: number): string | string[] {
     const prefix = player === 1 ? 'd@' : 'D@'
     return move.map((m) => `${prefix}${m.toLowerCase()}`)
   }

@@ -255,7 +255,7 @@ export default class GomocupEngine extends BaseSpawnEngine {
 
       return this.createBestMovePromise((bestMove) =>
         this.convertMove(player, bestMove),
-      )
+      ) as Promise<string>
     }
     throw new Error('Engine not started')
   }

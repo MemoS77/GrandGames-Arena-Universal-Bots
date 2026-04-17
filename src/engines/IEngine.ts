@@ -17,7 +17,7 @@ export interface IEngine {
     fixedTime?: number,
     whiteTime?: number,
     blackTime?: number,
-  ): Promise<string>
+  ): Promise<string | string[]>
 
   // Kill and clear memory
   kill(): void

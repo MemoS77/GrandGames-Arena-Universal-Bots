@@ -170,7 +170,7 @@ export default class UciEngine extends BaseSpawnEngine {
 
       return this.createBestMovePromise((bestMove) =>
         this.convertMove(bestMove, player),
-      )
+      ) as Promise<string>
     }
     throw new Error('Engine not started')
   }
