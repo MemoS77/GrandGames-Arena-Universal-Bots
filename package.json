@@ -7,9 +7,11 @@
   "scripts": {
     "build": "rollup -c",
     "start": "node dist/bundle.js --conf=./conf/conf.houdini.json",
-    "dev": "tsx watch src/index.ts --conf=./conf/conf.houdini.json",
-    "dev:gomoku": "tsx watch src/index.ts --conf=./conf/conf.gomoku.pela.json",
-    "start:stockfish": "node dist/bundle.js --conf=./conf/conf.stockfish.json"
+    "dev": "tsx watch src/index.ts",
+    "dev:super": "tsx watch src/index.ts --conf=./conf/windows/SuperBot.json",
+    "dev:easy": "tsx watch src/index.ts --conf=./conf/windows/EasyBot.json",
+    "docker:dev-up": "docker compose -f compose.example.yml up",
+    "docker:dev-down": "docker compose -f compose.example.yml down"
   },
   "author": "MemoS77",
   "license": "MIT",

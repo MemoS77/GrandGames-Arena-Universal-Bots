@@ -17,20 +17,15 @@ export enum GameId {
   MiniGomoku = 9,
   Gomoku = 10,
   Connect6 = 11,
-}
-
-export const GamesNames: Record<number, string> = {
-  [GameId.ClassicChess]: 'chess',
-  [GameId.AntiChess]: 'antichess',
-  [GameId.JanusChess]: 'januschess',
-  [GameId.LosAlamosChess]: 'losalamoschess',
-  [GameId.TriceChess]: 'tricechess',
-  [GameId.Crazyhouse]: 'crazyhouse',
-  [GameId.Chess960]: 'chess960',
-  [GameId.ChancellorChess]: 'chancellor',
-  [GameId.MiniGomoku]: 'fiveinrow',
-  [GameId.Gomoku]: 'gomoku',
-  [GameId.Connect6]: 'connect6',
+  Reversi = 12,
+  Pente = 13,
+  RPS = 14,
+  FRC = 15,
+  RuDraughts = 16,
+  LosingDraughts = 17,
+  Checkers = 18,
+  InternationalDraughts = 19,
+  CanadianCheckers = 20,
 }
 
 export const GamesIds: Record<string, GameId> = {
@@ -44,5 +39,18 @@ export const GamesIds: Record<string, GameId> = {
   chancellor: GameId.ChancellorChess,
   fiveinrow: GameId.MiniGomoku,
   connect6: GameId.Connect6,
+  reversi: GameId.Reversi,
+  pente: GameId.Pente,
+  rps: GameId.RPS,
+  islands: GameId.FRC,
+  rudraughts: GameId.RuDraughts,
+  losingdraughts: GameId.LosingDraughts,
+  checkers: GameId.Checkers,
+  internationaldraughts: GameId.InternationalDraughts,
+  canadiancheckers: GameId.CanadianCheckers,
   gomoku: GameId.Gomoku,
 }
+
+export const GameNames = Object.fromEntries(
+  Object.entries(GamesIds).map(([key, value]) => [value, key]),
+) as Record<number, string>

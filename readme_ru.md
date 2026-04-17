@@ -42,3 +42,12 @@ https://en.wikipedia.org/wiki/Universal_Chess_Interface
 
 Протокол для программ в турнирах по гомоку на сервисе https://gomocup.org/
 Примеры программ: https://gomocup.org/download-for-developers/#source
+
+### Cloudict Connect6
+
+Протокол для движка https://github.com/lang010/cloudict
+
+---
+
+Движки не включены в репозиторий, здесь только пример реализаци функционала дял их подключения.
+Вы можете написать свой движой используя любой из реализованых протоколов и использовать это ПО для подключения к GrandGames Arena, либо реализовать свой кастомный протокол.

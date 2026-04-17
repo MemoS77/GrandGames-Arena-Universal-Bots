@@ -1,16 +1,40 @@
 {
   "token": "your_bot_jwt_here_from_arena",
   "reconnectTimeout": 15000,
+  "maxThinkTime": 3000,
   "games": {
     "chess": {
       "engineKind": "uci",
-      "command": "./soft/stockfish17",
-      "initCommands": []
+      "command": "ffish",
+      "initCommands": [
+        "setoption name UCI_LimitStrength value true",
+        "setoption name UCI_Elo value 1700",
+        "setoption name UCI_Variant value chess"
+      ]
     },
     "chess960": {
       "engineKind": "uci",
       "command": "ffish",
       "initCommands": ["setoption name UCI_Variant value fischerandom"]
+    },
+    "gomoku": {
+      "engineKind": "gomocup",
+      "command": "gomoku"
+    },
+
+    "antichess": {
+      "engineKind": "uci",
+      "command": "ffish",
+      "initCommands": [
+        "setoption name UCI_LimitStrength value true",
+        "setoption name UCI_Elo value 1700",
+        "setoption name UCI_Variant value suicide"
+      ]
+    },
+    "chancellor": {
+      "engineKind": "uci",
+      "command": "ffish",
+      "initCommands": ["setoption name UCI_Variant value chancellor"]
     }
   }
 }

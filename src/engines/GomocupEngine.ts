@@ -1,8 +1,8 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { IEngine } from './IEngine'
+import { ChildProcessWithoutNullStreams } from 'child_process'
+import { BaseSpawnEngine } from './BaseSpawnEngine'
 import { BotTableInfo, ChessPos } from '../types/types'
 
-import cLog from '../funcs/cLog'
+import cLog from '../utils/cLog'
 
 const PING_DELAY = 1000
 const FIXED_MOVE_TIME_DEC = 5000
@@ -68,9 +68,7 @@ function sortAndAlternate(set: Set<string>, startWith: number): string[] {
   return result
 }
 
-export default class GomocupEngine implements IEngine {
-  private child: ChildProcessWithoutNullStreams | null = null
-  private onBestMove: ((bestMove: string) => void) | null = null
+export default class GomocupEngine extends BaseSpawnEngine {
   private onOk: (() => void) | null = null
   private boardSize = 15
   private pos: PosInfo = { moveNumber: 0, oneMove: null, moves: new Set() }
@@ -142,81 +140,59 @@ export default class GomocupEngine implements IEngine {
     }
   }
 
-  start(engineCommand: string, initCommands?: string[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const child = spawn(engineCommand)
-
-      child.on('spawn', () => {
-        cLog('Engine launched!')
-        this.onOk = () => {
-          cLog('OK recieved!')
-          if (initCommands) {
-            for (const command of initCommands) {
-              cLog(`Init command: ${command}`)
-              this.send(command)
-            }
-          }
-          resolve()
-          this.onOk = null
-        }
-
-        this.send('START 15')
-      })
-
-      child.on('error', (err) => {
-        reject(err)
-      })
-
-      const workBuffer = (output: string) => {
-        if (output.length === 0) return
-
-        cLog(`${output}`, 'blue')
-
-        if (this.onOk && output.indexOf('OK') !== -1) {
-          this.onOk()
-        }
-
-        if (this.onBestMove) {
-          // Проверяем, начинается ли строка с двух чисел, разделенных запятой
-          const match = output.match(/^(\d+),(\d+)/)
-          if (match) {
-            const move = `${match[1]},${match[2]}`
-            cLog('Move Found: ' + move, 'green')
-            this.onBestMove(move)
-            this.onBestMove = null // Сбрасываем обработчик после вызова
-          }
+  protected setupEngine(
+    child: ChildProcessWithoutNullStreams,
+    initCommands?: string[],
+    resolve?: () => void,
+    reject?: (err: any) => void,
+  ): void {
+    cLog('Engine launched!')
+    this.onOk = () => {
+      cLog('OK recieved!')
+      if (initCommands) {
+        for (const command of initCommands) {
+          cLog(`Init command: ${command}`)
+          this.send(command)
         }
       }
+      if (resolve) resolve()
+      this.onOk = null
+    }
 
-      let buffer = ''
-      child.stdout.on('data', (data) => {
-        // Добавляем новый блок данных к буферу
-        buffer += data.toString()
+    this.send('START 15')
+  }
 
-        // Проверяем, есть ли в буфере хотя бы одна полная строка
-        let index
-        while ((index = buffer.indexOf('\n')) !== -1) {
-          // Извлекаем строку до символа новой строки
-          const line = buffer.slice(0, index).trim()
-          // Отправляем строку в обработчик
-          workBuffer(line)
-          // Обрезаем буфер после символа новой строки
-          buffer = buffer.slice(index + 1)
-        }
-      })
+  protected handleOutput(output: string): void {
+    if (output.length === 0) return
 
-      // Read errors, if any (stderr)
-      child.stderr.on('data', (data) => {
-        cLog(`Program error: ${data}`, 'red')
-      })
+    cLog(`${output}`, 'blue')
 
-      // When the process finishes
-      child.on('close', (code) => {
-        cLog(`Program terminated with code: ${code}`, 'red')
-      })
+    if (this.onOk && output.indexOf('OK') !== -1) {
+      this.onOk()
+    }
 
-      this.child = child
-    })
+    if (this.onBestMove) {
+      const match = output.match(/^(\d+),(\d+)/)
+      if (match) {
+        const move = `${match[1]},${match[2]}`
+        cLog('Move Found: ' + move, 'green')
+        this.onBestMove(move)
+        this.onBestMove = null
+      }
+    }
+  }
+
+  private buffer = ''
+
+  protected onStdoutData(data: Buffer): void {
+    this.buffer += data.toString()
+
+    let index
+    while ((index = this.buffer.indexOf('\n')) !== -1) {
+      const line = this.buffer.slice(0, index).trim()
+      this.handleOutput(line)
+      this.buffer = this.buffer.slice(index + 1)
+    }
   }
 
   private convertMove(player: number, move: string): string {
@@ -251,7 +227,7 @@ export default class GomocupEngine implements IEngine {
     if (this.child) {
       this.parsePos(pos, player)
 
-      // Программы из gomocup не поддерживают вариант опен-рендзю. Приходится использоват ькостыль для третьего хода.
+      // Программы из gomocup не поддерживают вариант опен-рендзю. Приходится использовать костыль для третьего хода.
       if (this.pos.moveNumber === 3) {
         const moves = fixedMoves.sort(() => Math.random() - 0.5)
         const move = this.pos.moves.has(moves[0] + ',1') ? moves[1] : moves[0]
@@ -277,23 +253,20 @@ export default class GomocupEngine implements IEngine {
 
       this.applyPos(player)
 
-      // Return the best move after it's received
-      return new Promise((resolve) => {
-        this.onBestMove = (bestMove) => {
-          resolve(this.convertMove(player, bestMove))
-        }
-      })
+      return this.createBestMovePromise((bestMove) =>
+        this.convertMove(player, bestMove),
+      ) as Promise<string>
     }
     throw new Error('Engine not started')
   }
 
-  kill(): void {
-    if (this.child) {
-      this.child.kill('SIGKILL')
-    }
+  protected clearEngineState(): void {
+    this.onOk = null
+    this.pos = { moveNumber: 0, oneMove: null, moves: new Set() }
+    this.buffer = ''
   }
 
-  private send(message: string): void {
+  protected send(message: string): void {
     if (this.child) {
       this.child.stdin.write(message + '\n')
       cLog(message, 'magenta')

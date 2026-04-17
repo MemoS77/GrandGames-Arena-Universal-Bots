@@ -1,5 +1,5 @@
 export type GameConf = {
-  engineKind: 'uci' | 'gomocup'
+  engineKind: string
   command: string
   initCommands?: string[]
 }
@@ -10,6 +10,7 @@ export type AppConf = {
   maxTableLiveTime?: number
   reconnectTimeout?: number
   games: Record<string, GameConf>
+  maxThinkTime?: number
 }
 
 export type ChessPos = { fen: string; lastMove: string | null }
