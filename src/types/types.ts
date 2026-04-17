@@ -1,5 +1,5 @@
 export type GameConf = {
-  engineKind: 'uci' | 'gomocup'
+  engineKind: string
   command: string
   initCommands?: string[]
 }

@@ -4,8 +4,8 @@ import { BotTableInfo, ChessPos } from '../types/types'
 import cLog from '../utils/cLog'
 //import path from 'path'
 
-const SHOW_MESSAGES = false
-const SHOW_BUFF_MESSAGES = false
+const SHOW_MESSAGES = true
+const SHOW_BUFF_MESSAGES = true
 const BOARD_SIZE = 19
 
 // Время после которого можно увеличить глубину

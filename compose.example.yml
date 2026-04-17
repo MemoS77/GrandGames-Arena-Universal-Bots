@@ -1,0 +1,24 @@
+services:
+  superbot:
+    build: .
+    container_name: superbot
+    restart: on-failure:3
+    environment:
+      - DEBUG=true
+    volumes:
+      - ./conf/ubuntu/dev/SuperBot.json:/app/conf.json:ro
+      - ./ubuntu:/app/ubuntu
+    networks:
+      - bot-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  bot-network:
+    driver: bridge

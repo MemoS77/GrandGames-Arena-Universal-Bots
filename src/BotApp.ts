@@ -16,6 +16,7 @@ import GomocupEngine from './engines/GomocupEngine'
 import dLog from './utils/dLog'
 import { ChessPos } from './types/types'
 import { BotSDK, GameId, PositionInfo } from 'gga-bots'
+import Connect6Engine from './engines/Connect6Engine'
 
 type EngineInfo = {
   engine: IEngine
@@ -217,6 +218,15 @@ export default class BotApp {
     }
 
     switch (conf.engineKind) {
+      case 'connect6':
+        engine = new Connect6Engine()
+        await engine.start(
+          command,
+          conf.initCommands,
+          messageFn,
+          onProcessDeath,
+        )
+        return engine
       case 'uci':
         engine = new UciEngine()
         await engine.start(

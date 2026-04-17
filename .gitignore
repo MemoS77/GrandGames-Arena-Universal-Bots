@@ -6,3 +6,5 @@ ubuntu
 /conf
 conf.json
 bots_files/*
+compose.dev.yml
+compose.prod.yml

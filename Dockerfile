@@ -31,5 +31,5 @@ COPY dist ./dist
 # COPY ubuntu ./ubuntu
 # RUN find ./ubuntu -type f -exec chmod +x {} \;
 
-# Запускаем приложение
+# Запускаем приложение с конфигом из /app/conf.json
 CMD ["node", "dist/bundle.js"]
