@@ -2,10 +2,11 @@ import { ChildProcessWithoutNullStreams, SpawnOptions } from 'child_process'
 import { BaseSpawnEngine } from './BaseSpawnEngine'
 import { BotTableInfo, ChessPos } from '../types/types'
 import cLog from '../utils/cLog'
-//import path from 'path'
+import dLog from '../utils/dLog'
+import path from 'path'
 
 const SHOW_MESSAGES = true
-const SHOW_BUFF_MESSAGES = true
+const SHOW_BUFF_MESSAGES = false
 const BOARD_SIZE = 19
 
 // Время после которого можно увеличить глубину
@@ -49,12 +50,15 @@ export default class Connect6Engine extends BaseSpawnEngine {
   private varDepth: boolean = false
   private lastThinkTime: number = 0
 
-  /*
-  protected getSpawnOptions(): SpawnOptions {
+  protected getSpawnOptions(engineCommand: string): SpawnOptions {
+    const enginePath = engineCommand.split(' ')[0]
+    const engineDir = path.dirname(enginePath)
+    dLog(`Engine dir: ${engineDir}.`)
+    // Engine request working directory for config files
     return {
-      cwd: path.resolve('./bots_files'),
+      cwd: engineDir,
     }
-  }*/
+  }
 
   private fillStones(lines: string[]) {
     this.pos.newStones = []
@@ -250,6 +254,7 @@ export default class Connect6Engine extends BaseSpawnEngine {
 
   protected send(message: string): void {
     if (this.child) {
+      dLog(`Sending: ${message}`)
       this.child.stdin.write(`${message}\n`)
     }
   }

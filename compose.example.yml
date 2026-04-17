@@ -1,7 +1,7 @@
 services:
   superbot:
     build: .
-    container_name: superbot
+    container_name: superbot-dev
     restart: on-failure:3
     environment:
       - DEBUG=true

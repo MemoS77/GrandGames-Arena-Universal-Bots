@@ -3,6 +3,7 @@ import {
   ChildProcessWithoutNullStreams,
   SpawnOptions,
 } from 'child_process'
+import path from 'path'
 import { IEngine } from './IEngine'
 import dLog from '../utils/cLog'
 
@@ -35,7 +36,7 @@ export abstract class BaseSpawnEngine implements IEngine {
 
   protected abstract clearEngineState(): void
 
-  protected getSpawnOptions(): SpawnOptions | undefined {
+  protected getSpawnOptions(engineCommand: string): SpawnOptions | undefined {
     return undefined
   }
 
@@ -47,10 +48,21 @@ export abstract class BaseSpawnEngine implements IEngine {
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const commandParts = engineCommand.split(' ')
-      const spawnOptions = this.getSpawnOptions() || {}
+      const spawnOptions = this.getSpawnOptions(engineCommand) || {}
 
+      let executablePath = commandParts[0]
+
+      // Если указан cwd и путь не абсолютный, делаем путь абсолютным
+      if (!path.isAbsolute(executablePath)) {
+        executablePath = path.resolve(executablePath)
+      }
+
+      dLog(`Executable path: ${executablePath} for command: ${engineCommand}`)
+
+      // Absolute path is more reliable than relative path. Some problems with
+      // relative paths in some engines.
       const child = spawn(
-        commandParts[0],
+        executablePath,
         commandParts.slice(1),
         spawnOptions,
       ) as ChildProcessWithoutNullStreams
