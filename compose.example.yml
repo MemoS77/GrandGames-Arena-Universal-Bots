@@ -40,7 +40,7 @@ services:
       - DEBUG=false
     volumes:
       - ./conf/ubuntu/dev/ArenaBot.json:/app/conf.json:ro
-      - ./ubuntu:/app/ubuntu
+      - ./arenaEngines:/app/arenaEngines:ro
     networks:
       - bot-network
     deploy:
