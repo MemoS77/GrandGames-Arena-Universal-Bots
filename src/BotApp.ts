@@ -20,6 +20,7 @@ import { ChessPos } from './types/types'
 import { BotSDK, GameId, PositionInfo } from 'gga-bots'
 import Connect6Engine from './engines/Connect6Engine'
 import ArenaGamesEngine from './engines/ArenaGamesEngine'
+import PyDraughtsEngine from './engines/PyDraughtsEngine'
 
 type EngineInfo = {
   engine: IEngine
@@ -269,6 +270,15 @@ export default class BotApp {
         await arenaEngine.start(command, conf.initCommands, messageFn, onProcessDeath)
         return arenaEngine
       }
+      case 'pydraughts':
+        engine = new PyDraughtsEngine()
+        await engine.start(
+          command,
+          conf.initCommands,
+          messageFn,
+          onProcessDeath,
+        )
+        return engine
       default:
         throw new Error(`Enginekind ${conf.engineKind} not supported`)
     }

@@ -10,3 +10,4 @@ compose.dev.yml
 compose.prod.yml
 *.tgz
 /arenaEngines/*
+.claude
