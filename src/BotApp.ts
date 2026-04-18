@@ -20,7 +20,7 @@ import { ChessPos } from './types/types'
 import { BotSDK, GameId, PositionInfo } from 'gga-bots'
 import Connect6Engine from './engines/Connect6Engine'
 import ArenaGamesEngine from './engines/ArenaGamesEngine'
-import PyDraughtsEngine from './engines/PyDraughtsEngine'
+import DraughtsEngine from './engines/DraughtsEngine'
 
 type EngineInfo = {
   engine: IEngine
@@ -267,11 +267,16 @@ export default class BotApp {
       case 'arena': {
         const arenaEngine = new ArenaGamesEngine()
         arenaEngine.setGameId(gameId)
-        await arenaEngine.start(command, conf.initCommands, messageFn, onProcessDeath)
+        await arenaEngine.start(
+          command,
+          conf.initCommands,
+          messageFn,
+          onProcessDeath,
+        )
         return arenaEngine
       }
-      case 'pydraughts':
-        engine = new PyDraughtsEngine()
+      case 'draughts':
+        engine = new DraughtsEngine()
         await engine.start(
           command,
           conf.initCommands,

@@ -43,6 +43,13 @@ Implementation examples: Stockfish: https://stockfishchess.org/download/
 Protocol for programs in Gomoku tournaments on the service https://gomocup.org/
 Program examples: https://gomocup.org/download-for-developers/#source
 
+### Draught Engine
+
+Custom protocol for checkers programs.
+Engine startup: `draughts --variant=english` (available options: standard (international), russian, canadian, losing)
+Sending the position: `{"fen":"1d1d1d1d1d/d5d1d1/3d1d3d/d9/7d1d/2D7/3D1D1D1D/D5D3/1D3D1D1D/D1D1D1D1D1 w - - 3 13","time":3700}`
+Return - move in ggArena format, exmple: "ichd"
+
 ---
 
 The engines are not included in the repositories; this is only an example of how to implement the functionality needed to connect them.

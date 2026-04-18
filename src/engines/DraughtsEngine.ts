@@ -9,28 +9,10 @@ const READY_TIMEOUT_MS = 15_000
 const MIN_THINK_TIME = 200
 const PING_OVERHEAD_MS = 500
 
-/**
- * Adapter for py-draughts Python engine.
- *
- * Config example:
- *   { "engineKind": "pydraughts",
- *     "command": "python ./python/draughts_engine.py --variant=russian" }
- *
- * The Python script signals readiness with {"status":"ready"} on stdout,
- * then accepts {"fen":"...","time":<ms>} requests and replies {"move":"cege"}.
- *
- * Overrides start() because BaseSpawnEngine calls path.resolve() on the
- * executable name, which breaks bare commands like "python" / "python3"
- * that must be resolved via PATH.
- */
-export default class PyDraughtsEngine extends BaseSpawnEngine {
+export default class DraughtsEngine extends BaseSpawnEngine {
   private lineBuffer: string = ''
   private readyTimeout: NodeJS.Timeout | null = null
   private onReady: (() => void) | null = null
-
-  // -------------------------------------------------------------------------
-  // Spawn — bypass BaseSpawnEngine's path.resolve() for bare executables
-  // -------------------------------------------------------------------------
 
   start(
     engineCommand: string,
@@ -40,20 +22,16 @@ export default class PyDraughtsEngine extends BaseSpawnEngine {
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const parts = engineCommand.trim().split(/\s+/)
-      const pythonExe = parts[0] // 'python' / 'python3' / full path
+      const exe = parts[0]
 
       // Resolve script path if it's a file reference (not a flag)
-      const spawnArgs = parts.slice(1).map((arg) =>
-        arg.startsWith('-') ? arg : path.resolve(arg),
-      )
+      const spawnArgs = parts
+        .slice(1)
+        .map((arg) => (arg.startsWith('-') ? arg : path.resolve(arg)))
 
-      dLog(`PyDraughts spawn: ${pythonExe} ${spawnArgs.join(' ')}`)
+      dLog(`Draughts spawn: ${exe} ${spawnArgs.join(' ')}`)
 
-      const child = spawn(
-        pythonExe,
-        spawnArgs,
-        {},
-      ) as ChildProcessWithoutNullStreams
+      const child = spawn(exe, spawnArgs, {}) as ChildProcessWithoutNullStreams
 
       this.onProcessDeath = onProcessDeath || null
 
@@ -66,17 +44,13 @@ export default class PyDraughtsEngine extends BaseSpawnEngine {
       })
       child.stdout.on('data', (data) => this.onStdoutData(data))
       child.stderr.on('data', (data) =>
-        console.error(`PyDraughts stderr: ${data}`),
+        console.error(`Draughts stderr: ${data}`),
       )
       child.on('close', (code) => this.onProcessClose(code))
 
       this.child = child
     })
   }
-
-  // -------------------------------------------------------------------------
-  // Setup — wait for {"status":"ready"} from Python
-  // -------------------------------------------------------------------------
 
   protected setupEngine(
     _child: ChildProcessWithoutNullStreams,
@@ -94,7 +68,7 @@ export default class PyDraughtsEngine extends BaseSpawnEngine {
       this.readyTimeout = null
       if (this.onReady) {
         this.onReady = null
-        if (reject) reject(new Error('PyDraughts engine startup timeout'))
+        if (reject) reject(new Error('Draughts engine startup timeout'))
       }
     }, READY_TIMEOUT_MS)
   }
@@ -122,18 +96,18 @@ export default class PyDraughtsEngine extends BaseSpawnEngine {
     try {
       msg = JSON.parse(line)
     } catch {
-      dLog(`PyDraughts non-JSON: ${line}`)
+      dLog(`Draughts non-JSON: ${line}`)
       return
     }
 
     if (msg.status === 'ready' && this.onReady) {
-      dLog(`PyDraughts ready (variant=${msg.variant})`)
+      dLog(`Draughts ready (variant=${msg.variant})`)
       this.onReady()
       return
     }
 
     if (msg.error) {
-      console.error(`PyDraughts engine error: ${msg.error}`)
+      console.error(`Draughts engine error: ${msg.error}`)
       if (this.onBestMoveReject) {
         this.onBestMoveReject(new Error(msg.error))
         this.onBestMoveReject = null
@@ -143,7 +117,7 @@ export default class PyDraughtsEngine extends BaseSpawnEngine {
     }
 
     if (msg.move && this.onBestMove) {
-      dLog(`PyDraughts move: ${msg.move}`)
+      dLog(`Draughts move: ${msg.move}`)
       this.onBestMove(msg.move)
       this.onBestMove = null
     }
