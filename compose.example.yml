@@ -1,7 +1,6 @@
 services:
   superbot:
     build: .
-    container_name: superbot-dev
     restart: on-failure:3
     environment:
       - DEBUG=false
@@ -16,8 +15,41 @@ services:
           cpus: '1.0'
           memory: 512M
         reservations:
-          cpus: '0.5'
-          memory: 256M
+          memory: 128M
+  easybot:
+    build: .
+    restart: on-failure:3
+    environment:
+      - DEBUG=false
+    volumes:
+      - ./conf/ubuntu/dev/EasyBot.json:/app/conf.json:ro
+      - ./ubuntu:/app/ubuntu
+    networks:
+      - bot-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 128M
+  arenabot:
+    build: .
+    restart: on-failure:3
+    environment:
+      - DEBUG=false
+    volumes:
+      - ./conf/ubuntu/dev/ArenaBot.json:/app/conf.json:ro
+      - ./arenaEngines:/app/arenaEngines:ro
+    networks:
+      - bot-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          memory: 128M
 
 networks:
   bot-network:

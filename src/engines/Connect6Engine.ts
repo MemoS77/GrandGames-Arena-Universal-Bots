@@ -3,7 +3,6 @@ import { BaseSpawnEngine } from './BaseSpawnEngine'
 import { BotTableInfo, ChessPos } from '../types/types'
 import cLog from '../utils/cLog'
 import dLog from '../utils/dLog'
-import path from 'path'
 
 const SHOW_MESSAGES = true
 const SHOW_BUFF_MESSAGES = false

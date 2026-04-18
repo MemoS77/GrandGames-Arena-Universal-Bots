@@ -12,8 +12,11 @@ const maxLivetime = 60000 * 20
 const DEFAULT_MAX_THINK_TIME = 5000
 
 export const WS_SERVER = conf?.server ?? null
+
 export const JWT_TOKEN = conf?.token ?? ''
 export const MAX_THINK_TIME = conf?.maxThinkTime ?? DEFAULT_MAX_THINK_TIME
+export const ALLOW_GUESTS = conf?.allowGuests ?? true
+export const ALLOW_BOTS = conf?.allowBots ?? true
 
 export const MAX_TABLE_LIVE_TIME = Math.min(
   conf!.maxTableLiveTime || maxLivetime,

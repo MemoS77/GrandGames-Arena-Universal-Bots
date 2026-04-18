@@ -1,4 +1,6 @@
 import {
+  ALLOW_BOTS,
+  ALLOW_GUESTS,
   gamesConf,
   JWT_TOKEN,
   LOOP_INTERVAL,
@@ -17,6 +19,7 @@ import dLog from './utils/dLog'
 import { ChessPos } from './types/types'
 import { BotSDK, GameId, PositionInfo } from 'gga-bots'
 import Connect6Engine from './engines/Connect6Engine'
+import ArenaGamesEngine from './engines/ArenaGamesEngine'
 
 type EngineInfo = {
   engine: IEngine
@@ -74,13 +77,18 @@ export default class BotApp {
     return new Promise((resolve, reject) => {
       if (this.connected) {
         resolve()
+        return
       }
 
       const doConnect = () => {
         const games = this.getSupportedGames()
         dLog(`Try connect. Games: ${games.join(', ')}`)
         this.sdk
-          .connect(JWT_TOKEN, games as GameId[], { serverUrl: WS_SERVER })
+          .connect(JWT_TOKEN, games as GameId[], {
+            serverUrl: WS_SERVER,
+            allowGuests: ALLOW_GUESTS,
+            allowBots: ALLOW_BOTS,
+          })
           .then((r) => {
             dLog('Connected! User data: ', r)
             this.connected = true
@@ -151,6 +159,7 @@ export default class BotApp {
                   enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
                   enemyRating:
                     data.players[data.botIndex === 0 ? 1 : 0]!.rating,
+                  players: data.players.map((p) => p?.state ?? null),
                 },
                 data.position,
                 data.botIndex!,
@@ -254,6 +263,12 @@ export default class BotApp {
           onProcessDeath,
         )
         return engine
+      case 'arena': {
+        const arenaEngine = new ArenaGamesEngine()
+        arenaEngine.setGameId(gameId)
+        await arenaEngine.start(command, conf.initCommands, messageFn, onProcessDeath)
+        return arenaEngine
+      }
       default:
         throw new Error(`Enginekind ${conf.engineKind} not supported`)
     }
