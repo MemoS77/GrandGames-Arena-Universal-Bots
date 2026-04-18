@@ -26,6 +26,7 @@ export enum GameId {
   Checkers = 18,
   InternationalDraughts = 19,
   CanadianCheckers = 20,
+  Cheskers = 21,
 }
 
 export const GamesIds: Record<string, GameId> = {
@@ -49,6 +50,7 @@ export const GamesIds: Record<string, GameId> = {
   internationaldraughts: GameId.InternationalDraughts,
   canadiancheckers: GameId.CanadianCheckers,
   gomoku: GameId.Gomoku,
+  cheskers: GameId.Cheskers,
 }
 
 export const GameNames = Object.fromEntries(
