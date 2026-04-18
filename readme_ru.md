@@ -47,6 +47,13 @@ https://en.wikipedia.org/wiki/Universal_Chess_Interface
 
 Протокол для движка https://github.com/lang010/cloudict
 
+### Draught Engine
+
+Кастомный протокол для шашечных программ.
+Запуск движка: `draughts --variant=english` (доступные варианты: standart (международные), russian, canadian, losing)
+Позицию отсылаем: `{"fen":"1d1d1d1d1d/d5d1d1/3d1d3d/d9/7d1d/2D7/3D1D1D1D/D5D3/1D3D1D1D/D1D1D1D1D1 w - - 3 13","time":3700}`
+Возвращает ход в сразу формате арены, к примеру `aecg`
+
 ---
 
 Движки не включены в репозиторий, здесь только примеры реализации функционала для их подключения.

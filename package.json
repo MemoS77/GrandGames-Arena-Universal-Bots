@@ -11,6 +11,7 @@
     "dev:super": "tsx watch src/index.ts --conf=./conf/windows/SuperBot.json",
     "dev:easy": "tsx watch src/index.ts --conf=./conf/windows/EasyBot.json",
     "dev:arena": "tsx watch src/index.ts --conf=./conf/ubuntu/dev/ArenaBot.json",
+    "dev:draughts": "tsx watch src/index.ts --conf=./conf/windows/DraughtsBot.json",
     "docker:dev-up": "docker compose -f compose.example.yml up --build",
     "docker:dev-down": "docker compose -f compose.example.yml down"
   },
