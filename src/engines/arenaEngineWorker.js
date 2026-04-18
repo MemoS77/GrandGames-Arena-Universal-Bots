@@ -23,15 +23,6 @@ parentPort.on('message', async (msg) => {
       players ??
       Array.from({ length: maxPlayers }, (_, i) => (i === player ? 1 : 0))
     const state = { position, players: playersState, update: null }
-
-    console.log(
-      'Engine state:',
-      typeof engine.getBestMove,
-      state,
-      player,
-      thinkTimeLimit,
-    )
-
     const result = await engine.getBestMove(state, player, thinkTimeLimit)
 
     if (result === null || result === undefined) {
