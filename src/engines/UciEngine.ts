@@ -4,9 +4,8 @@ import dLog from '../utils/dLog'
 import { BotTableInfo } from '../types/types'
 import { MAX_THINK_TIME } from '../conf'
 
-const PING_DELAY = 1000
-const FIXED_MOVE_TIME_DEC = 5000
-const MIN_THINK_TIME = 100
+const PING_DELAY = 500
+const MIN_THINK_TIME = 200
 const BUFFER_WORK_DELAY = 50
 
 export default class UciEngine extends BaseSpawnEngine {
@@ -152,10 +151,7 @@ export default class UciEngine extends BaseSpawnEngine {
 
       if (fixedTime) {
         const pTime = player === 1 ? blackTime : whiteTime
-        let tm = Math.max(
-          pTime - PING_DELAY - FIXED_MOVE_TIME_DEC,
-          MIN_THINK_TIME,
-        )
+        let tm = Math.max(pTime - PING_DELAY, MIN_THINK_TIME)
 
         if (tm > MAX_THINK_TIME) tm = MAX_THINK_TIME
         dLog(`Move time: ${tm}`)

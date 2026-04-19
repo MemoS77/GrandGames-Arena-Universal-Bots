@@ -9,7 +9,7 @@ const conf = loadConfig(configPath)
 const minTimeout = 5000
 const maxLivetime = 60000 * 20
 
-const DEFAULT_MAX_THINK_TIME = 5000
+const DEFAULT_MAX_THINK_TIME = 10000
 
 export const WS_SERVER = conf?.server ?? null
 

@@ -154,6 +154,23 @@ export default class BotApp {
             try {
               successMove = false
               const timeDec = new Date().getTime() - initTime
+
+              console.log(
+                'TTT:',
+                {
+                  id: id,
+                  enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
+                  enemyRating:
+                    data.players[data.botIndex === 0 ? 1 : 0]!.rating,
+                  players: data.players.map((p) => p?.state ?? null),
+                },
+                data.position,
+                data.botIndex!,
+                data.fixedMoveTime ? 1 : 0,
+                data.players[0]!.time - (data.botIndex !== 0 ? 0 : timeDec),
+                data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
+              )
+
               move = await ei.engine.getBestMove(
                 {
                   id: id,
@@ -168,6 +185,8 @@ export default class BotApp {
                 data.players[0]!.time - (data.botIndex !== 0 ? 0 : timeDec),
                 data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
               )
+
+              console.log('Move result:', move)
 
               if (this.connected && move !== null) {
                 // Handle multiple moves (e.g., Connect6 double moves)
@@ -227,8 +246,12 @@ export default class BotApp {
     let engine: IEngine
     const command = conf.command
 
-    const messageFn = (tableId: number, message: string) => {
-      this.sdk.message(tableId, message)
+    const messageFn = async (tableId: number, message: string) => {
+      try {
+        await this.sdk.message(tableId, message)
+      } catch (error) {
+        console.error('Failed to send message:', error)
+      }
     }
 
     const onProcessDeath = () => {
