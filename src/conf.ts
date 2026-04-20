@@ -9,14 +9,16 @@ const conf = loadConfig(configPath)
 const minTimeout = 5000
 const maxLivetime = 60000 * 20
 
-const DEFAULT_MAX_THINK_TIME = 5000
+const DEFAULT_MAX_THINK_TIME = 10000
 
 export const WS_SERVER = conf?.server ?? null
 
 export const JWT_TOKEN = conf?.token ?? ''
-export const MAX_THINK_TIME = conf?.maxThinkTime ?? DEFAULT_MAX_THINK_TIME
+export const MAX_THINK_TIME = +(conf?.maxThinkTime ?? DEFAULT_MAX_THINK_TIME)
 export const ALLOW_GUESTS = conf?.allowGuests ?? true
 export const ALLOW_BOTS = conf?.allowBots ?? true
+export const ALLOW_TRAIN = conf?.allowTrain ?? true
+export const MAX_TABLES = +(conf?.maxTables ?? 1)
 
 export const MAX_TABLE_LIVE_TIME = Math.min(
   conf!.maxTableLiveTime || maxLivetime,
@@ -31,4 +33,4 @@ export const LOOP_INTERVAL = 30000
 
 export const gamesConf = conf!.games
 
-export const MAX_SEARCH_MOVE_RESTART = 3
+export const MAX_SEARCH_MOVE_RESTART = 1

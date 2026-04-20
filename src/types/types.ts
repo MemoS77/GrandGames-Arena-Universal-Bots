@@ -5,6 +5,7 @@ export type GameConf = {
 }
 
 export type AppConf = {
+  maxTables: number
   token: string
   server: string
   maxTableLiveTime?: number
@@ -13,6 +14,7 @@ export type AppConf = {
   maxThinkTime?: number
   allowGuests?: boolean
   allowBots?: boolean
+  allowTrain?: boolean
 }
 
 export type ChessPos = { fen: string; lastMove: string | null }

@@ -1,11 +1,13 @@
 import {
   ALLOW_BOTS,
   ALLOW_GUESTS,
+  ALLOW_TRAIN,
   gamesConf,
   JWT_TOKEN,
   LOOP_INTERVAL,
   MAX_SEARCH_MOVE_RESTART,
   MAX_TABLE_LIVE_TIME,
+  MAX_TABLES,
   RECONNECT_TIMEOUT,
   WS_SERVER,
 } from './conf'
@@ -89,6 +91,8 @@ export default class BotApp {
             serverUrl: WS_SERVER,
             allowGuests: ALLOW_GUESTS,
             allowBots: ALLOW_BOTS,
+            allowTrain: ALLOW_TRAIN,
+            maxTables: MAX_TABLES,
           })
           .then((r) => {
             dLog('Connected! User data: ', r)
@@ -98,7 +102,7 @@ export default class BotApp {
             resolve()
           })
           .catch((e) => {
-            console.error(e)
+            console.error("Can't connect", e)
             setTimeout(() => doConnect(), RECONNECT_TIMEOUT)
           })
       }
@@ -118,9 +122,7 @@ export default class BotApp {
         if (!ei) {
           // Prevent race condition - check if engine is being created
           if (this.engineCreationLocks.has(id)) {
-            console.log(
-              `Engine for table ${id} is already being created, skipping`,
-            )
+            dLog(`Engine for table ${id} is already being created, skipping`)
             return
           }
 
@@ -149,54 +151,51 @@ export default class BotApp {
           let successMove = false
           const initTime = new Date().getTime()
           let tryNumber = 0
-          do {
-            let move: string | string[] | null = null
-            try {
-              successMove = false
-              const timeDec = new Date().getTime() - initTime
-              move = await ei.engine.getBestMove(
-                {
-                  id: id,
-                  enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
-                  enemyRating:
-                    data.players[data.botIndex === 0 ? 1 : 0]!.rating,
-                  players: data.players.map((p) => p?.state ?? null),
-                },
-                data.position,
-                data.botIndex!,
-                data.fixedMoveTime ? 1 : 0,
-                data.players[0]!.time - (data.botIndex !== 0 ? 0 : timeDec),
-                data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
-              )
 
-              if (this.connected && move !== null) {
-                // Handle multiple moves (e.g., Connect6 double moves)
-                if (Array.isArray(move)) {
-                  for (let i = 0; i < move.length; i++) {
-                    await this.sdk.move(id, move[i])
-                    await new Promise((resolve) => setTimeout(resolve, 50))
-                  }
-                } else {
-                  await this.sdk.move(id, move)
+          let move: string | string[] | null = null
+          try {
+            successMove = false
+            const timeDec = new Date().getTime() - initTime
+
+            move = await ei.engine.getBestMove(
+              {
+                id: id,
+                enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
+                enemyRating: data.players[data.botIndex === 0 ? 1 : 0]!.rating,
+                players: data.players.map((p) => p?.state ?? null),
+              },
+              data.position,
+              data.botIndex!,
+              data.fixedMoveTime ? 1 : 0,
+              data.players[0]!.time - (data.botIndex !== 0 ? 0 : timeDec),
+              data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
+            )
+
+            if (this.connected && move !== null) {
+              // Handle multiple moves (e.g., Connect6 double moves)
+              if (Array.isArray(move)) {
+                for (let i = 0; i < move.length; i++) {
+                  await this.sdk.move(id, move[i])
+                  await new Promise((resolve) => setTimeout(resolve, 50))
                 }
-                successMove = true
-                ei.lastMoveTime = new Date().getTime()
-                ei.nowThinkMove = null
+              } else {
+                await this.sdk.move(id, move)
               }
-            } catch (err) {
-              tryNumber++
-              console.error(`Move failed (${move}). Restart analize!`, err)
-
-              // If engine is dead, remove it and break
-              if (err instanceof Error && err.message === 'Engine killed') {
-                console.error('Engine is dead, removing from map')
-                this.engines.delete(id)
-                break
-              }
+              successMove = true
+              ei.lastMoveTime = new Date().getTime()
+              ei.nowThinkMove = null
             }
-          } while (!successMove && tryNumber < MAX_SEARCH_MOVE_RESTART)
+          } catch (err) {
+            tryNumber++
+            console.error(`Move failed (${move})`, err)
 
-          // Reset nowThinkMove if all attempts failed
+            // If engine is dead, remove it and break
+            if (err instanceof Error && err.message === 'Engine killed') {
+              console.error('Engine is dead, removing from map')
+              this.engines.delete(id)
+            }
+          }
+
           if (!successMove && ei.nowThinkMove !== null) {
             console.error(
               `Failed to make move after ${tryNumber} attempts, resetting nowThinkMove`,
@@ -227,8 +226,12 @@ export default class BotApp {
     let engine: IEngine
     const command = conf.command
 
-    const messageFn = (tableId: number, message: string) => {
-      this.sdk.message(tableId, message)
+    const messageFn = async (tableId: number, message: string) => {
+      try {
+        await this.sdk.message(tableId, message)
+      } catch (error) {
+        console.error('Failed to send message:', error)
+      }
     }
 
     const onProcessDeath = () => {
