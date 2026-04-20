@@ -1,11 +1,13 @@
 import {
   ALLOW_BOTS,
   ALLOW_GUESTS,
+  ALLOW_TRAIN,
   gamesConf,
   JWT_TOKEN,
   LOOP_INTERVAL,
   MAX_SEARCH_MOVE_RESTART,
   MAX_TABLE_LIVE_TIME,
+  MAX_TABLES,
   RECONNECT_TIMEOUT,
   WS_SERVER,
 } from './conf'
@@ -89,6 +91,8 @@ export default class BotApp {
             serverUrl: WS_SERVER,
             allowGuests: ALLOW_GUESTS,
             allowBots: ALLOW_BOTS,
+            allowTrain: ALLOW_TRAIN,
+            maxTables: MAX_TABLES,
           })
           .then((r) => {
             dLog('Connected! User data: ', r)
@@ -98,7 +102,7 @@ export default class BotApp {
             resolve()
           })
           .catch((e) => {
-            console.error(e)
+            console.error("Can't connect", e)
             setTimeout(() => doConnect(), RECONNECT_TIMEOUT)
           })
       }
@@ -118,9 +122,7 @@ export default class BotApp {
         if (!ei) {
           // Prevent race condition - check if engine is being created
           if (this.engineCreationLocks.has(id)) {
-            console.log(
-              `Engine for table ${id} is already being created, skipping`,
-            )
+            dLog(`Engine for table ${id} is already being created, skipping`)
             return
           }
 
@@ -154,21 +156,6 @@ export default class BotApp {
           try {
             successMove = false
             const timeDec = new Date().getTime() - initTime
-
-            console.log(
-              'TTT:',
-              {
-                id: id,
-                enemyLogin: data.players[data.botIndex === 0 ? 1 : 0]!.login,
-                enemyRating: data.players[data.botIndex === 0 ? 1 : 0]!.rating,
-                players: data.players.map((p) => p?.state ?? null),
-              },
-              data.position,
-              data.botIndex!,
-              data.fixedMoveTime ? 1 : 0,
-              data.players[0]!.time - (data.botIndex !== 0 ? 0 : timeDec),
-              data.players[1]!.time - (data.botIndex !== 1 ? 0 : timeDec),
-            )
 
             move = await ei.engine.getBestMove(
               {

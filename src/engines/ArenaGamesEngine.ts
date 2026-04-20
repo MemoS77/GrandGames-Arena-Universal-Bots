@@ -6,7 +6,7 @@ import { BotTableInfo } from '../types/types'
 import dLog from '../utils/dLog'
 import { MAX_THINK_TIME } from '../conf'
 
-const PING_DELAY = 3000
+const PING_DELAY = 500
 const MIN_THINK_TIME = 500
 
 type PendingMove = {
@@ -119,8 +119,6 @@ export default class ArenaGamesEngine implements IEngine {
       const pTime = player === 0 ? whiteTime : blackTime
       thinkTimeLimit = Math.max(pTime - PING_DELAY, MIN_THINK_TIME)
     }
-
-    dLog(`Move time: ${thinkTimeLimit}`)
 
     const players =
       _tableInfo.players ??
