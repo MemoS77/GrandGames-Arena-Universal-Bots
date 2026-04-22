@@ -27,6 +27,17 @@ export enum GameId {
   InternationalDraughts = 19,
   CanadianCheckers = 20,
   Cheskers = 21,
+  // Атомные шахматы
+  AtomicChess = 22,
+
+  // Царь горы (король на центральном поле)
+  KingOfTheHill = 23,
+
+  // Три шаха
+  ThreeCheck = 24,
+
+  // Гонка королей
+  RacingKings = 25,
 }
 
 export const GamesIds: Record<string, GameId> = {
@@ -51,6 +62,10 @@ export const GamesIds: Record<string, GameId> = {
   canadiancheckers: GameId.CanadianCheckers,
   gomoku: GameId.Gomoku,
   cheskers: GameId.Cheskers,
+  atomicchess: GameId.AtomicChess,
+  kingofthehill: GameId.KingOfTheHill,
+  threecheck: GameId.ThreeCheck,
+  racingkings: GameId.RacingKings,
 }
 
 export const GameNames = Object.fromEntries(
